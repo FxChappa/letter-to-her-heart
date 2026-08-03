@@ -6,16 +6,11 @@ export type SupabaseEnv = {
   error: string | null;
 };
 
-const readEnv = (key: string): string => {
-  const value = import.meta.env[key];
-  return typeof value === 'string' ? value.trim() : '';
-};
-
 export const getSupabaseEnv = (): SupabaseEnv => {
-  const url = readEnv('VITE_SUPABASE_URL');
-  const publishableKey = readEnv('VITE_SUPABASE_PUBLISHABLE_KEY');
+  const url = import.meta.env.VITE_SUPABASE_URL?.trim() ?? '';
+  const publishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY?.trim() ?? '';
   const key = publishableKey;
-  const explicitDemo = readEnv('VITE_ALLOW_DEMO_MODE') === 'true';
+  const explicitDemo = import.meta.env.VITE_ALLOW_DEMO_MODE === 'true';
   const configured = Boolean(url && key);
   const demoMode = !configured && (import.meta.env.DEV || explicitDemo);
 
