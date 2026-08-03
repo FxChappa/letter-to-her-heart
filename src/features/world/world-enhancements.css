@@ -1,0 +1,287 @@
+.space-settings {
+  position: relative;
+}
+
+.space-settings > button span {
+  display: inline;
+  color: inherit;
+  font-size: inherit;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.space-settings__panel {
+  position: fixed;
+  z-index: 88;
+  top: max(66px, calc(env(safe-area-inset-top) + 54px));
+  right: max(14px, env(safe-area-inset-right));
+  width: min(300px, calc(100vw - 28px));
+  padding: 14px;
+  border: 1px solid rgba(244, 213, 154, 0.25);
+  border-radius: 16px;
+  background: rgba(20, 9, 23, 0.96);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.38);
+  backdrop-filter: blur(18px);
+}
+
+.space-settings__panel header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.space-settings__panel header strong {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 1.35rem;
+  font-weight: 500;
+}
+
+.space-settings__panel header button {
+  width: 36px;
+  min-height: 36px;
+  padding: 0;
+  border-radius: 50%;
+}
+
+.space-settings__row {
+  width: 100%;
+  justify-content: flex-start !important;
+  margin-top: 8px;
+  border-radius: 10px !important;
+}
+
+.space-settings__volume {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+  color: rgba(255, 248, 239, 0.72);
+  font-size: 0.75rem;
+}
+
+.space-settings__volume input {
+  width: 100%;
+  accent-color: #f4d59a;
+}
+
+.controls-tutorial {
+  position: fixed;
+  z-index: 100;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: max(18px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) max(18px, env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left));
+  overflow: auto;
+  background: rgba(13, 6, 16, 0.66);
+  backdrop-filter: blur(12px);
+}
+
+.controls-tutorial__panel {
+  position: relative;
+  width: min(680px, 100%);
+  max-height: calc(100svh - 36px);
+  overflow: auto;
+  padding: 30px;
+  border: 1px solid rgba(244, 213, 154, 0.28);
+  border-radius: 20px;
+  background: linear-gradient(150deg, rgba(31, 12, 30, 0.98), rgba(73, 24, 50, 0.98));
+  box-shadow: 0 32px 100px rgba(0, 0, 0, 0.45);
+}
+
+.controls-tutorial__close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff8ef;
+}
+
+.controls-tutorial__kicker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 46px 22px 0;
+  color: #f4d59a;
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.controls-tutorial__heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.controls-tutorial__heading > svg {
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  color: #f4d59a;
+}
+
+.controls-tutorial__heading h2 {
+  margin: 0;
+  font-size: clamp(2rem, 7vw, 3.25rem);
+  line-height: 0.98;
+}
+
+.controls-tutorial__heading p {
+  margin: 8px 0 0;
+  color: rgba(255, 248, 239, 0.7);
+}
+
+.controls-tutorial__steps {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 24px;
+  margin: 26px 0 22px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.controls-tutorial__steps > div {
+  min-height: 64px;
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.controls-tutorial__steps span {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(244, 213, 154, 0.12);
+  color: #f4d59a;
+}
+
+.controls-tutorial__steps svg {
+  width: 17px;
+  height: 17px;
+}
+
+.controls-tutorial__steps p {
+  margin: 0;
+  color: rgba(255, 248, 239, 0.84);
+  font-size: 0.86rem;
+  line-height: 1.4;
+}
+
+.controls-tutorial__remember {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: rgba(255, 248, 239, 0.72);
+  font-size: 0.82rem;
+}
+
+.controls-tutorial__remember input {
+  width: 18px;
+  height: 18px;
+  accent-color: #f4d59a;
+}
+
+.controls-tutorial__enter {
+  width: 100%;
+  min-height: 50px;
+  margin-top: 20px;
+  border: 0;
+  border-radius: 10px;
+  background: #f4d59a;
+  color: #25121c;
+  font-weight: 500;
+}
+
+.interact-button kbd {
+  min-width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  margin-left: 2px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 248, 239, 0.72);
+  font: 0.7rem 'DM Sans', system-ui, sans-serif;
+}
+
+.memory-fab {
+  bottom: max(216px, calc(env(safe-area-inset-bottom) + 202px));
+}
+
+@media (pointer: fine) and (min-width: 721px) {
+  .touch-joystick {
+    display: none;
+  }
+}
+
+@media (pointer: coarse) {
+  .interact-button kbd {
+    display: none;
+  }
+}
+
+@media (max-width: 720px) {
+  .space-settings > button {
+    width: 40px;
+    padding: 0;
+    font-size: 0;
+  }
+
+  .space-settings > button span {
+    display: none;
+  }
+
+  .space-settings__panel button {
+    width: 100%;
+    font-size: 0.78rem;
+  }
+
+  .space-settings__panel header button {
+    width: 36px;
+  }
+
+  .controls-tutorial__panel {
+    padding: 26px 20px 20px;
+  }
+
+  .controls-tutorial__steps {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 900px) {
+  .avatar-intro {
+    display: none;
+  }
+}
+
+@media (max-height: 560px) and (orientation: landscape) {
+  .controls-tutorial {
+    place-items: start center;
+  }
+
+  .controls-tutorial__panel {
+    max-height: none;
+  }
+
+  .controls-tutorial__steps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin-block: 16px;
+  }
+
+  .controls-tutorial__steps > div {
+    min-height: 54px;
+  }
+}

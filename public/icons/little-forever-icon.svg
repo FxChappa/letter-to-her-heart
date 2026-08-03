@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Our Little Forever app icon">
+  <rect width="512" height="512" rx="108" fill="#1b0b1e"/>
+  <circle cx="256" cy="244" r="154" fill="#3e1734"/>
+  <circle cx="256" cy="244" r="118" fill="#5f2344"/>
+  <path d="M256 339c-8-7-19-16-31-27-48-42-82-72-82-113 0-31 24-55 55-55 24 0 42 13 58 33 16-20 34-33 58-33 31 0 55 24 55 55 0 41-34 71-82 113-12 11-23 20-31 27Z" fill="#f2d49a"/>
+  <path d="M151 392h210" stroke="#f7efe5" stroke-width="14" stroke-linecap="round" opacity=".82"/>
+  <path d="M186 419h140" stroke="#b87461" stroke-width="10" stroke-linecap="round" opacity=".88"/>
+</svg>
