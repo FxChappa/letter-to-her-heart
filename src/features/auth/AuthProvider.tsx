@@ -15,6 +15,7 @@ type AuthContextValue = {
   configurationError: string | null;
   signIn: (email: string, password: string) => Promise<void>;
   continueDemo: (role: ProfileRole) => void;
+  updateProfileProgress: (progress: Partial<Pick<Profile, 'controls_tutorial_complete' | 'new_chapter_completed_at'>>) => Promise<void>;
   signOut: () => Promise<void>;
 };
 
@@ -27,6 +28,7 @@ const makeDemoProfile = (role: ProfileRole): Profile => ({
   role,
   avatar_key: role,
   controls_tutorial_complete: false,
+  new_chapter_completed_at: null,
   created_at: new Date().toISOString(),
   updated_at: new Date().toISOString(),
 });
@@ -36,7 +38,9 @@ const readDemoProfile = (): Profile | null => {
     const raw = localStorage.getItem(demoProfileKey);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Profile;
-    return parsed.role === 'aldane' || parsed.role === 'santana' ? parsed : null;
+    return parsed.role === 'aldane' || parsed.role === 'santana'
+      ? { ...parsed, controls_tutorial_complete: parsed.controls_tutorial_complete ?? false, new_chapter_completed_at: parsed.new_chapter_completed_at ?? null }
+      : null;
   } catch {
     return null;
   }
@@ -119,6 +123,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setConfigurationError(null);
   }, []);
 
+  const updateProfileProgress = useCallback(async (progress: Partial<Pick<Profile, 'controls_tutorial_complete' | 'new_chapter_completed_at'>>) => {
+    if (!profile) throw new Error('The private profile is not ready yet.');
+    if (supabase && mode === 'supabase') {
+      const { error } = await supabase.from('profiles').update(progress).eq('id', profile.id);
+      if (error) throw error;
+    }
+    const nextProfile = { ...profile, ...progress, updated_at: new Date().toISOString() };
+    if (mode === 'demo') localStorage.setItem(demoProfileKey, JSON.stringify(nextProfile));
+    setProfile(nextProfile);
+  }, [mode, profile, supabase]);
+
   const signOut = useCallback(async () => {
     if (supabase) await supabase.auth.signOut();
     localStorage.removeItem(demoProfileKey);
@@ -136,8 +151,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     configurationError,
     signIn,
     continueDemo,
+    updateProfileProgress,
     signOut,
-  }), [mode, loading, session, user, profile, configurationError, signIn, continueDemo, signOut]);
+  }), [mode, loading, session, user, profile, configurationError, signIn, continueDemo, updateProfileProgress, signOut]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

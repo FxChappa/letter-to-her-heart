@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { RealtimeChannel } from '@supabase/supabase-js';
-import { getSupabaseClient } from '../../lib/supabase/client';
+import { authorizeRealtime, getSupabaseClient } from '../../lib/supabase/client';
 import type { DateEvent, DateState } from './dateState';
 import { applyDateEvent, canAskNow, canPrepareDate, canRespondToQuestion, initialDateState } from './dateState';
 import type { Profile } from '../../lib/supabase/database.types';
@@ -37,6 +37,7 @@ export function useDateSequence(profile: Profile | null, demoMode: boolean) {
 
   useEffect(() => {
     if (!profile || !supabase || demoMode) return;
+    let active = true;
     const nextChannel = supabase.channel('our-little-forever:date', {
       config: { private: true, broadcast: { self: false } },
     });
@@ -56,15 +57,23 @@ export function useDateSequence(profile: Profile | null, demoMode: boolean) {
       }).catch(() => setError('The date moment could not verify the other profile.'));
     });
 
-    nextChannel.subscribe(status => {
-      if (status === 'SUBSCRIBED') setError(null);
-      if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-        setError('The date controls are reconnecting. Chat and voice are still available.');
-      }
-    });
     channelRef.current = nextChannel;
+    void authorizeRealtime(supabase)
+      .then(() => {
+        if (!active) return;
+        nextChannel.subscribe(status => {
+          if (status === 'SUBSCRIBED') setError(null);
+          if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+            setError('The date controls are reconnecting. Chat and voice are still available.');
+          }
+        });
+      })
+      .catch(() => {
+        if (active) setError('The date controls are reconnecting. Chat and voice are still available.');
+      });
 
     return () => {
+      active = false;
       channelRef.current = null;
       void supabase.removeChannel(nextChannel);
     };

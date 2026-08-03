@@ -8,9 +8,12 @@ import { ChatDrawer } from '../chat/ChatDrawer';
 import { DateControls } from '../date/DateControls';
 import { useDateSequence } from '../date/useDateSequence';
 import { MemoryShelf } from '../memories/MemoryShelf';
+import { NewChapterOverlay } from '../letters/NewChapterOverlay';
+import { shouldPresentNewChapter } from '../letters/newChapterProgress';
 import { VoiceControls } from '../voice/VoiceControls';
 import { ControlsTutorial, shouldOpenControlsTutorial } from './ControlsTutorial';
 import { SpaceSettings } from './SpaceSettings';
+import type { RoomMood } from './worldTypes';
 import './world-enhancements.css';
 
 const SharedHome = lazy(() => import('./SharedHome').then(module => ({ default: module.SharedHome })));
@@ -21,18 +24,28 @@ export function OurSpacePage() {
   const demoMode = auth.mode === 'demo';
   const date = useDateSequence(profile, demoMode);
   const audio = useAmbientAudio();
-  const [tutorialOpen, setTutorialOpen] = useState(() => shouldOpenControlsTutorial(profile));
+  const requiresNewChapter = shouldPresentNewChapter(profile);
+  const [newChapterOpen, setNewChapterOpen] = useState(requiresNewChapter);
+  const [previewNewChapter, setPreviewNewChapter] = useState(false);
+  const [tutorialOpen, setTutorialOpen] = useState(() => !requiresNewChapter && shouldOpenControlsTutorial(profile));
   const [memoriesOpen, setMemoriesOpen] = useState(false);
   const [introVisible, setIntroVisible] = useState(true);
+  const [roomMood, setRoomMood] = useState<RoomMood>('home');
 
   useEffect(() => {
+    if (newChapterOpen || previewNewChapter) return;
     const timer = window.setTimeout(() => setIntroVisible(false), 5200);
     return () => window.clearTimeout(timer);
-  }, []);
+  }, [newChapterOpen, previewNewChapter]);
 
   useEffect(() => {
-    if (date.state.phase !== 'normal') audio.setMood('date');
-  }, [audio, date.state.phase]);
+    audio.setMood(date.state.phase !== 'normal' ? 'date' : roomMood);
+  }, [audio, date.state.phase, roomMood]);
+
+  const finishNewChapter = async () => {
+    await auth.updateProfileProgress({ new_chapter_completed_at: new Date().toISOString() });
+    if (shouldOpenControlsTutorial(profile)) setTutorialOpen(true);
+  };
 
   return (
     <main className="space-page">
@@ -46,7 +59,13 @@ export function OurSpacePage() {
             <BookOpen size={16} />
             Letters
           </button>
-          <SpaceSettings onShowControls={() => setTutorialOpen(true)} />
+          <SpaceSettings
+            profile={profile}
+            roomMood={roomMood}
+            onMoodChange={setRoomMood}
+            onShowControls={() => setTutorialOpen(true)}
+            onPreviewNewChapter={() => setPreviewNewChapter(true)}
+          />
           <button type="button" onClick={() => void auth.signOut()} aria-label="Sign out" title="Sign out">
             <LogOut size={16} />
             Sign out
@@ -68,6 +87,7 @@ export function OurSpacePage() {
         <SharedHome
           profile={profile}
           datePhase={date.state.phase}
+          roomMood={date.state.phase !== 'normal' ? 'date' : roomMood}
           demoMode={demoMode}
           onOpenMemories={() => setMemoriesOpen(true)}
         />
@@ -78,6 +98,16 @@ export function OurSpacePage() {
       <ChatDrawer profile={profile} demoMode={demoMode} />
       <MemoryShelf profile={profile} demoMode={demoMode} open={memoriesOpen} onOpenChange={setMemoriesOpen} />
       <ControlsTutorial profile={profile} open={tutorialOpen} onOpenChange={setTutorialOpen} />
+      {(newChapterOpen || previewNewChapter) && (
+        <NewChapterOverlay
+          preview={previewNewChapter}
+          onComplete={finishNewChapter}
+          onClose={() => {
+            setNewChapterOpen(false);
+            setPreviewNewChapter(false);
+          }}
+        />
+      )}
     </main>
   );
 }

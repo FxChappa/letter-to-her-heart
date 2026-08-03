@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isNearDiningChair, resolveMovement, toCameraRelativeMovement } from './movement';
+import { getNearbyInteraction, resolveMovement, toCameraRelativeMovement } from './movement';
 import type { PlayerPose } from './worldTypes';
 
 const pose: PlayerPose = {
@@ -7,6 +7,7 @@ const pose: PlayerPose = {
   rotation: 0,
   moving: false,
   activity: 'idle',
+  seatId: null,
   room: 'home',
 };
 
@@ -24,9 +25,10 @@ describe('avatar movement', () => {
     expect(next.activity).toBe('idle');
   });
 
-  it('detects dining chair interaction range', () => {
-    expect(isNearDiningChair({ ...pose, position: [2.15, 0, -1.05] })).toBe(true);
-    expect(isNearDiningChair({ ...pose, position: [-5, 0, 4] })).toBe(false);
+  it('detects reusable seating and respects occupied seats', () => {
+    expect(getNearbyInteraction({ ...pose, position: [2.15, 0, -1.05] })).toEqual({ kind: 'seat', seatId: 'dining-aldane' });
+    expect(getNearbyInteraction({ ...pose, position: [2.15, 0, -1.05] }, ['dining-aldane'])).toBeNull();
+    expect(getNearbyInteraction({ ...pose, position: [-3.66, 0, 1.38] })).toEqual({ kind: 'seat', seatId: 'sofa-left' });
   });
 
   it.each([

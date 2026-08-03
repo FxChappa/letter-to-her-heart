@@ -43,6 +43,7 @@ export const avatarConfigs: Record<AvatarKey, AvatarConfig> = {
 export const childNpcConfigs = [
   {
     name: 'Lael',
+    gender: 'boy' as const,
     style: 'reader' as const,
     skin: '#8c5234',
     hair: '#17100f',
@@ -51,6 +52,7 @@ export const childNpcConfigs = [
   },
   {
     name: 'Leila',
+    gender: 'girl' as const,
     style: 'builder' as const,
     skin: '#7d462f',
     hair: '#18100f',

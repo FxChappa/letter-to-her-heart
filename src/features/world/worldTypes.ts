@@ -1,12 +1,15 @@
 import type { ProfileRole } from '../../lib/supabase/database.types';
 
+export type RoomMood = 'home' | 'cozy' | 'date';
+
 export type VectorTuple = [number, number, number];
 
 export type PlayerPose = {
   position: VectorTuple;
   rotation: number;
   moving: boolean;
-  activity: 'idle' | 'walking' | 'sitting';
+  activity: 'idle' | 'walking' | 'sitting' | 'kiss' | 'dance';
+  seatId: string | null;
   room: 'home';
 };
 
@@ -28,5 +31,6 @@ export const defaultPose: PlayerPose = {
   rotation: 0,
   moving: false,
   activity: 'idle',
+  seatId: null,
   room: 'home',
 };

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { RealtimeChannel } from '@supabase/supabase-js';
 import { getIceServers } from '../../config/iceServers';
-import { getSupabaseClient } from '../../lib/supabase/client';
+import { authorizeRealtime, getSupabaseClient } from '../../lib/supabase/client';
 import type { Profile } from '../../lib/supabase/database.types';
 
 type VoiceStatus = 'idle' | 'joining' | 'waiting' | 'connecting' | 'connected';
@@ -126,6 +126,7 @@ export function useVoiceConnection(profile: Profile | null, demoMode: boolean, o
 
   useEffect(() => {
     if (!profile || !supabase || demoMode) return;
+    let active = true;
 
     const channel = supabase.channel('our-little-forever:voice', {
       config: { private: true, broadcast: { self: false } },
@@ -135,20 +136,29 @@ export function useVoiceConnection(profile: Profile | null, demoMode: boolean, o
       void handleSignal(payload as VoiceSignal);
     });
 
-    channel.subscribe(status => {
-      if (status === 'SUBSCRIBED') {
-        signalReadyRef.current = true;
-        if (localStreamRef.current) void sendSignal({ kind: 'join', senderId: profile.id });
-      }
-      if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-        signalReadyRef.current = false;
-        if (localStreamRef.current) setError('Voice signaling is reconnecting. Leave and join again if it does not recover.');
-      }
-      if (status === 'CLOSED') signalReadyRef.current = false;
-    });
     channelRef.current = channel;
+    void authorizeRealtime(supabase)
+      .then(() => {
+        if (!active) return;
+        channel.subscribe(status => {
+          if (status === 'SUBSCRIBED') {
+            signalReadyRef.current = true;
+            if (localStreamRef.current) void sendSignal({ kind: 'join', senderId: profile.id });
+          }
+          if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+            signalReadyRef.current = false;
+            if (localStreamRef.current) setError('Voice signaling is reconnecting. Leave and join again if it does not recover.');
+          }
+          if (status === 'CLOSED') signalReadyRef.current = false;
+        });
+      })
+      .catch(() => {
+        signalReadyRef.current = false;
+        if (active && localStreamRef.current) setError('Voice signaling is reconnecting. Leave and join again if it does not recover.');
+      });
 
     return () => {
+      active = false;
       channelRef.current = null;
       signalReadyRef.current = false;
       void supabase.removeChannel(channel);

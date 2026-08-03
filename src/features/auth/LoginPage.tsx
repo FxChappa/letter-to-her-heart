@@ -75,7 +75,7 @@ export function LoginPage() {
           </div>
         )}
 
-        <Link className="login-card__link" to="/">
+        <Link className="login-card__link" to="/letters">
           <Heart size={14} fill="currentColor" />
           Revisit the letters
         </Link>

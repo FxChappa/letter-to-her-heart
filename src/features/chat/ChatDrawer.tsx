@@ -21,7 +21,9 @@ export function ChatDrawer({ profile, demoMode }: { profile: Profile; demoMode: 
   const [draft, setDraft] = useState('');
   const [error, setError] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const drawerRef = useRef<HTMLElement | null>(null);
   const chat = useChat(profile, demoMode);
+  const latestMessage = chat.messages[chat.messages.length - 1];
 
   useEffect(() => {
     if (!open) return;
@@ -32,6 +34,11 @@ export function ChatDrawer({ profile, demoMode }: { profile: Profile; demoMode: 
     if (!open) return;
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
   }, [chat.messages.length, open]);
+
+  useEffect(() => {
+    if (open) drawerRef.current?.removeAttribute('inert');
+    else drawerRef.current?.setAttribute('inert', '');
+  }, [open]);
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -46,11 +53,17 @@ export function ChatDrawer({ profile, demoMode }: { profile: Profile; demoMode: 
 
   return (
     <>
+      {!open && latestMessage && (
+        <button className="chat-preview" type="button" onClick={() => setOpen(true)} aria-label="Open the latest private message">
+          <span>{latestMessage.sender_id === profile.id ? 'You' : 'From your person'}</span>
+          <p>{latestMessage.content}</p>
+        </button>
+      )}
       <button className="chat-fab" type="button" onClick={() => setOpen(true)} aria-label="Open private chat">
         <MessageCircle />
         {chat.unreadCount > 0 && <span>{chat.unreadCount}</span>}
       </button>
-      <aside className={open ? 'chat-drawer chat-drawer--open' : 'chat-drawer'} aria-label="Private chat" aria-hidden={!open}>
+      <aside ref={drawerRef} className={open ? 'chat-drawer chat-drawer--open' : 'chat-drawer'} aria-label="Private chat" aria-hidden={!open}>
         <header>
           <div>
             <span>Just between us</span>

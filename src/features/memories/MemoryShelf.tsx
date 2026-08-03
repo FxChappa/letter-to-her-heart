@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { BookOpen, X } from 'lucide-react';
 import { getSupabaseClient } from '../../lib/supabase/client';
+import { shouldPresentNewChapter } from '../letters/newChapterProgress';
 import type { LetterRecord, Profile } from '../../lib/supabase/database.types';
 import type { Chapter } from '../../types';
 import { chapters1 } from '../../chapters1';
@@ -16,6 +17,18 @@ type MemoryItem = {
   body: string;
   source: 'static' | 'supabase';
   sections?: Chapter[];
+  recipientId?: string;
+  openedAt?: string | null;
+};
+
+const readKey = (profileId: string) => `our-little-forever-read-letters-${profileId}`;
+
+const readLocalIds = (profileId: string): string[] => {
+  try {
+    return JSON.parse(localStorage.getItem(readKey(profileId)) ?? '[]') as string[];
+  } catch {
+    return [];
+  }
 };
 
 const staticLetters: MemoryItem[] = [
@@ -55,6 +68,13 @@ export function MemoryShelf({
   const [items, setItems] = useState<MemoryItem[]>(staticLetters);
   const [selected, setSelected] = useState<MemoryItem | null>(staticLetters[0]);
   const [error, setError] = useState<string | null>(null);
+  const [readIds, setReadIds] = useState<string[]>(() => readLocalIds(profile.id));
+  const shelfRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    if (open) shelfRef.current?.removeAttribute('inert');
+    else shelfRef.current?.setAttribute('inert', '');
+  }, [open]);
 
   useEffect(() => {
     const supabase = getSupabaseClient();
@@ -80,11 +100,13 @@ export function MemoryShelf({
         setError(lettersResult.error?.message ?? momentResult.error?.message ?? 'Memories could not be loaded.');
         return;
       }
-      const remoteItems = (lettersResult.data ?? []).map((letter: LetterRecord) => ({
+      const remoteItems: MemoryItem[] = (lettersResult.data ?? []).map((letter: LetterRecord) => ({
         id: letter.id,
         title: letter.title,
         body: letter.body,
         source: 'supabase' as const,
+        recipientId: letter.recipient_id,
+        openedAt: letter.opened_at,
       }));
       if (momentResult.data?.responded_at) {
         const date = new Intl.DateTimeFormat(undefined, { dateStyle: 'long', timeStyle: 'short' }).format(new Date(momentResult.data.responded_at));
@@ -102,12 +124,35 @@ export function MemoryShelf({
     });
   }, [demoMode, open, profile.id]);
 
+  const isUnread = (item: MemoryItem) => {
+    if (readIds.includes(item.id)) return false;
+    if (item.id === 'new-chapter-static') return shouldPresentNewChapter(profile);
+    return item.source === 'supabase' && item.recipientId === profile.id && !item.openedAt;
+  };
+
+  const openItem = async (item: MemoryItem) => {
+    setSelected(item);
+    if (!readIds.includes(item.id)) {
+      const nextReadIds = [...readIds, item.id];
+      setReadIds(nextReadIds);
+      localStorage.setItem(readKey(profile.id), JSON.stringify(nextReadIds));
+    }
+    if (item.source === 'supabase' && item.recipientId === profile.id && !item.openedAt && !demoMode) {
+      const supabase = getSupabaseClient();
+      if (!supabase) return;
+      const openedAt = new Date().toISOString();
+      const { error: updateError } = await supabase.from('letters').update({ opened_at: openedAt }).eq('id', item.id);
+      if (updateError) setError('The letter opened, but its read marker could not be saved.');
+      else setItems(current => current.map(candidate => candidate.id === item.id ? { ...candidate, openedAt } : candidate));
+    }
+  };
+
   return (
     <>
       <button className="memory-fab" type="button" onClick={() => onOpenChange(true)} aria-label="Open letters and memories" title="Letters and memories">
         <BookOpen />
       </button>
-      <aside className={open ? 'memory-shelf memory-shelf--open' : 'memory-shelf'} aria-label="Letters and memories" aria-hidden={!open}>
+      <aside ref={shelfRef} className={open ? 'memory-shelf memory-shelf--open' : 'memory-shelf'} aria-label="Letters and memories" aria-hidden={!open}>
         <header>
           <div>
             <span>Our bookshelf</span>
@@ -119,8 +164,9 @@ export function MemoryShelf({
         <div className="memory-shelf__body">
           <nav aria-label="Saved letters">
             {items.map(item => (
-              <button key={item.id} type="button" className={selected?.id === item.id ? 'is-selected' : ''} onClick={() => setSelected(item)}>
-                {item.title}
+              <button key={item.id} type="button" className={selected?.id === item.id ? 'is-selected' : ''} onClick={() => void openItem(item)}>
+                <span>{item.title}</span>
+                {isUnread(item) && <i aria-label="Unread letter" />}
               </button>
             ))}
           </nav>

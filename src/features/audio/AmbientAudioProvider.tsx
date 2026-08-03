@@ -1,18 +1,25 @@
 import React, { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { ambientTracks, getAmbientTrack } from '../../config/music';
+import type { AmbientTrack } from '../../config/music';
+import type { RoomMood } from '../world/worldTypes';
 
 type AmbientAudioContextValue = {
   playing: boolean;
   volume: number;
   voiceDucked: boolean;
-  mood: 'evening' | 'date';
+  mood: RoomMood;
   start: () => Promise<boolean>;
   stop: () => void;
   setVolume: (volume: number) => void;
   setVoiceDucked: (active: boolean) => void;
-  setMood: (mood: 'evening' | 'date') => void;
+  setMood: (mood: RoomMood) => void;
+  playFootstep: () => void;
+  tracks: AmbientTrack[];
 };
 
 const AmbientAudioContext = createContext<AmbientAudioContextValue | null>(null);
+const volumeStorageKey = 'our-little-forever-atmosphere-volume';
+const moodStorageKey = 'our-little-forever-atmosphere-track';
 
 const clampVolume = (value: number) => Math.max(0.1, Math.min(0.74, value));
 
@@ -21,13 +28,17 @@ export function AmbientAudioProvider({ children }: { children: ReactNode }) {
   const masterRef = useRef<GainNode | null>(null);
   const schedulerRef = useRef<number | null>(null);
   const startingRef = useRef<Promise<boolean> | null>(null);
-  const volumeRef = useRef(0.52);
+  const savedVolume = Number(localStorage.getItem(volumeStorageKey));
+  const savedMood = localStorage.getItem(moodStorageKey) as RoomMood | null;
+  const initialVolume = Number.isFinite(savedVolume) && savedVolume > 0 ? clampVolume(savedVolume) : 0.52;
+  const initialMood: RoomMood = savedMood === 'home' || savedMood === 'cozy' || savedMood === 'date' ? savedMood : 'home';
+  const volumeRef = useRef(initialVolume);
   const voiceDuckedRef = useRef(false);
-  const moodRef = useRef<'evening' | 'date'>('evening');
+  const moodRef = useRef<RoomMood>(initialMood);
   const [playing, setPlaying] = useState(false);
-  const [volume, setVolumeState] = useState(0.52);
+  const [volume, setVolumeState] = useState(initialVolume);
   const [voiceDucked, setVoiceDuckedState] = useState(false);
-  const [mood, setMoodState] = useState<'evening' | 'date'>('evening');
+  const [mood, setMoodState] = useState<RoomMood>(initialMood);
 
   const targetVolume = useCallback(() => volumeRef.current * (voiceDuckedRef.current ? 0.28 : 1), []);
 
@@ -40,21 +51,9 @@ export function AmbientAudioProvider({ children }: { children: ReactNode }) {
   }, [targetVolume]);
 
   const scheduleChord = useCallback((context: AudioContext, destination: AudioNode, index: number) => {
-    const eveningProgressions = [
-      [146.83, 174.61, 220, 261.63],
-      [130.81, 164.81, 196, 246.94],
-      [110, 146.83, 174.61, 220],
-      [123.47, 146.83, 185, 220],
-    ];
-    const dateProgressions = [
-      [130.81, 164.81, 196, 246.94],
-      [116.54, 146.83, 174.61, 220],
-      [123.47, 155.56, 185, 233.08],
-      [110, 138.59, 164.81, 220],
-    ];
-    const dateMood = moodRef.current === 'date';
-    const progressions = dateMood ? dateProgressions : eveningProgressions;
-    const chord = progressions[index % progressions.length];
+    const track = getAmbientTrack(moodRef.current);
+    const dateMood = track.id === 'date';
+    const chord = track.progressions[index % track.progressions.length];
     const now = context.currentTime;
 
     chord.forEach((frequency, noteIndex) => {
@@ -65,7 +64,7 @@ export function AmbientAudioProvider({ children }: { children: ReactNode }) {
       oscillator.frequency.setValueAtTime(frequency / (noteIndex === 0 ? 2 : 1), now);
       oscillator.detune.setValueAtTime((noteIndex - 1.5) * 2.2, now);
       filter.type = 'lowpass';
-      filter.frequency.setValueAtTime((dateMood ? 640 : 760) + noteIndex * 90, now);
+      filter.frequency.setValueAtTime(track.filterFrequency + noteIndex * 80, now);
       filter.Q.value = 0.35;
       gain.gain.setValueAtTime(0.0001, now);
       gain.gain.exponentialRampToValueAtTime(noteIndex === 0 ? (dateMood ? 0.105 : 0.09) : (dateMood ? 0.029 : 0.034), now + 2.2);
@@ -147,7 +146,7 @@ export function AmbientAudioProvider({ children }: { children: ReactNode }) {
 
       let chordIndex = 0;
       scheduleChord(context, master, chordIndex++);
-      schedulerRef.current = window.setInterval(() => scheduleChord(context, master, chordIndex++), 9400);
+      schedulerRef.current = window.setInterval(() => scheduleChord(context, master, chordIndex++), getAmbientTrack(moodRef.current).intervalMs);
       contextRef.current = context;
       masterRef.current = master;
       setPlaying(true);
@@ -164,6 +163,7 @@ export function AmbientAudioProvider({ children }: { children: ReactNode }) {
     const safeVolume = clampVolume(nextVolume);
     volumeRef.current = safeVolume;
     setVolumeState(safeVolume);
+    localStorage.setItem(volumeStorageKey, String(safeVolume));
     applyVolume();
   }, [applyVolume]);
 
@@ -173,9 +173,35 @@ export function AmbientAudioProvider({ children }: { children: ReactNode }) {
     applyVolume(0.28);
   }, [applyVolume]);
 
-  const setMood = useCallback((nextMood: 'evening' | 'date') => {
+  const setMood = useCallback((nextMood: RoomMood) => {
+    if (moodRef.current === nextMood) return;
     moodRef.current = nextMood;
     setMoodState(nextMood);
+    localStorage.setItem(moodStorageKey, nextMood);
+    if (playing) {
+      stop();
+      window.setTimeout(() => void start(), 820);
+    }
+  }, [playing, start, stop]);
+
+  const playFootstep = useCallback(() => {
+    const context = contextRef.current;
+    const master = masterRef.current;
+    if (!context || !master || context.state !== 'running') return;
+    const now = context.currentTime;
+    const oscillator = context.createOscillator();
+    const gain = context.createGain();
+    const filter = context.createBiquadFilter();
+    oscillator.type = 'triangle';
+    oscillator.frequency.setValueAtTime(78 + Math.random() * 12, now);
+    filter.type = 'lowpass';
+    filter.frequency.value = 190;
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(voiceDuckedRef.current ? 0.006 : 0.013, now + 0.015);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.11);
+    oscillator.connect(filter).connect(gain).connect(master);
+    oscillator.start(now);
+    oscillator.stop(now + 0.12);
   }, []);
 
   useEffect(() => () => stop(), [stop]);
@@ -190,7 +216,9 @@ export function AmbientAudioProvider({ children }: { children: ReactNode }) {
     setVolume,
     setVoiceDucked,
     setMood,
-  }), [playing, volume, voiceDucked, mood, start, stop, setVolume, setVoiceDucked, setMood]);
+    playFootstep,
+    tracks: ambientTracks,
+  }), [playing, volume, voiceDucked, mood, start, stop, setVolume, setVoiceDucked, setMood, playFootstep]);
 
   return <AmbientAudioContext.Provider value={value}>{children}</AmbientAudioContext.Provider>;
 }

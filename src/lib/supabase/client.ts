@@ -25,3 +25,11 @@ export const getSupabaseClient = (): SupabaseClient<Database> | null => {
   }
   return cachedClient;
 };
+
+export const authorizeRealtime = async (client: SupabaseClient<Database>): Promise<void> => {
+  const { data, error } = await client.auth.getSession();
+  if (error || !data.session?.access_token) {
+    throw new Error('The private realtime session is not ready.');
+  }
+  await client.realtime.setAuth(data.session.access_token);
+};

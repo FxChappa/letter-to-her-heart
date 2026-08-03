@@ -7,7 +7,11 @@ import { TouchJoystick } from './TouchJoystick';
 import { HomeScene } from './HomeScene';
 import { defaultPose, MovementInput, PlayerPose } from './worldTypes';
 import { usePresence } from './usePresence';
-import type { InteractionKind } from './movement';
+import { getSeatById, type WorldInteraction } from './movement';
+import { useCoupleInteraction } from './useCoupleInteraction';
+import { CoupleInteractionControls } from './CoupleInteractionControls';
+import type { RoomMood } from './worldTypes';
+import { useAmbientAudio } from '../audio/AmbientAudioProvider';
 
 const canUseWebGL = () => {
   try {
@@ -21,30 +25,39 @@ const canUseWebGL = () => {
 export function SharedHome({
   profile,
   datePhase,
+  roomMood,
   demoMode,
   onOpenMemories,
 }: {
   profile: Profile;
   datePhase: DatePhase;
+  roomMood: RoomMood;
   demoMode: boolean;
   onOpenMemories: () => void;
 }) {
   const webglAvailable = useMemo(() => canUseWebGL(), []);
+  const audio = useAmbientAudio();
   const [pose, setPose] = useState<PlayerPose>(defaultPose);
-  const [interaction, setInteraction] = useState<InteractionKind>(null);
-  const [sitting, setSitting] = useState(false);
+  const [interaction, setInteraction] = useState<WorldInteraction>(null);
+  const [seatId, setSeatId] = useState<string | null>(null);
   const presence = usePresence(profile, pose, demoMode);
+  const coupleInteraction = useCoupleInteraction(profile, pose, presence.players, demoMode);
   const cameraYaw = useRef(0);
   const mobileInputRef = useRef<MovementInput>({ x: 0, z: 0 });
   const dragRef = useRef<{ pointerId: number | null; x: number }>({ pointerId: null, x: 0 });
 
   const performInteraction = useCallback(() => {
-    if (interaction === 'chair') {
-      setSitting(value => !value);
+    if (seatId) {
+      setSeatId(null);
       return;
     }
-    if (interaction === 'memories') onOpenMemories();
-  }, [interaction, onOpenMemories]);
+    if (interaction?.kind === 'seat') {
+      const occupied = presence.players.some(player => player.pose.seatId === interaction.seatId);
+      if (!occupied) setSeatId(interaction.seatId);
+      return;
+    }
+    if (interaction?.kind === 'memories') onOpenMemories();
+  }, [interaction, onOpenMemories, presence.players, seatId]);
 
   useEffect(() => {
     const interact = (event: KeyboardEvent) => {
@@ -126,12 +139,16 @@ export function SharedHome({
           <HomeScene
             profile={profile}
             datePhase={datePhase}
+            roomMood={roomMood}
             remotePlayers={presence.players}
             cameraYaw={cameraYaw}
             mobileInputRef={mobileInputRef}
             onPoseChange={setPose}
             onInteractionChange={setInteraction}
-            sitting={sitting}
+            seatId={seatId}
+            occupiedSeatIds={presence.players.map(player => player.pose.seatId).filter((value): value is string => Boolean(value))}
+            coupleInteraction={coupleInteraction.active}
+            onFootstep={audio.playFootstep}
           />
         </Suspense>
       </Canvas>
@@ -139,13 +156,14 @@ export function SharedHome({
       <div className="presence-pill" role="status">{presence.statusText}</div>
       {demoMode && <div className="demo-pill">Demo mode</div>}
       <TouchJoystick inputRef={mobileInputRef} />
-      {interaction && (
+      {(interaction || seatId) && !coupleInteraction.active && (
         <button className="interact-button" type="button" onClick={performInteraction}>
-          {interaction === 'chair' ? <Armchair size={18} /> : <BookOpen size={18} />}
-          {interaction === 'chair' ? (sitting ? 'Stand' : 'Sit') : 'Open memories'}
+          {(seatId || interaction?.kind === 'seat') ? <Armchair size={18} /> : <BookOpen size={18} />}
+          {seatId ? 'Stand' : interaction?.kind === 'seat' ? (getSeatById(interaction.seatId)?.label ?? 'Sit') : 'Read letters'}
           <kbd>E</kbd>
         </button>
       )}
+      <CoupleInteractionControls interaction={coupleInteraction} demoMode={demoMode} />
     </section>
   );
 }

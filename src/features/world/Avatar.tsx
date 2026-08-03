@@ -101,6 +101,51 @@ function Face({ config }: { config: AvatarConfig }) {
   );
 }
 
+function Necklace({ config }: { config: AvatarConfig }) {
+  const beadColor = config.key === 'aldane' ? '#d8d2c9' : config.accent;
+  return (
+    <group position={[0, 1.31, 0.206]}>
+      {[-0.11, -0.074, -0.038, 0, 0.038, 0.074, 0.11].map((x, index) => (
+        <mesh key={x} position={[x, -Math.abs(x) * 0.35, -Math.abs(index - 3) * 0.002]}>
+          <sphereGeometry args={[config.key === 'aldane' ? 0.012 : 0.009, 7, 6]} />
+          <meshStandardMaterial color={beadColor} metalness={0.62} roughness={0.3} />
+        </mesh>
+      ))}
+      <mesh position={[0, -0.035, 0.003]}>
+        <octahedronGeometry args={[config.key === 'aldane' ? 0.025 : 0.022, 0]} />
+        <meshStandardMaterial color={config.accent} metalness={0.62} roughness={0.28} />
+      </mesh>
+    </group>
+  );
+}
+
+function Shoe({ feminine }: { feminine: boolean }) {
+  const upper = feminine ? '#f3e8dc' : '#18161a';
+  return (
+    <group>
+      <mesh position={[0, -0.012, 0.025]} scale={[feminine ? 0.15 : 0.17, 0.065, 0.29]}>
+        <boxGeometry args={[1, 1, 1]} />
+        <meshStandardMaterial color={upper} roughness={0.72} />
+      </mesh>
+      <mesh position={[0, -0.035, 0.035]} scale={[feminine ? 0.16 : 0.18, 0.025, 0.31]}>
+        <boxGeometry args={[1, 1, 1]} />
+        <meshStandardMaterial color={feminine ? '#d6af76' : '#eee9e1'} roughness={0.68} />
+      </mesh>
+      <mesh position={[0, 0.008, 0.17]} scale={[feminine ? 0.073 : 0.09, 0.052, 0.085]}>
+        <sphereGeometry args={[1, 10, 7]} />
+        <meshStandardMaterial color={upper} roughness={0.72} />
+      </mesh>
+      {!feminine && [-0.035, 0, 0.035].map(z => (
+        <mesh key={z} position={[0, 0.036, z + 0.045]} rotation={[0, 0, Math.PI / 2]}>
+          <cylinderGeometry args={[0.006, 0.006, 0.14, 6]} />
+          <meshStandardMaterial color="#c5beb6" roughness={0.62} />
+        </mesh>
+      ))}
+      {feminine && <mesh position={[0, 0.018, 0.1]}><torusGeometry args={[0.07, 0.009, 6, 16]} /><meshStandardMaterial color="#d6af76" metalness={0.35} /></mesh>}
+    </group>
+  );
+}
+
 export function AvatarBody({
   config,
   subtle = false,
@@ -125,12 +170,25 @@ export function AvatarBody({
   useFrame(({ clock }, delta) => {
     const currentActivity = activityRef?.current ?? activity;
     const moving = currentActivity === 'walking';
+    const kissing = currentActivity === 'kiss';
+    const dancing = currentActivity === 'dance';
     motionRef.current = MathUtils.lerp(motionRef.current, moving ? 1 : 0, 1 - Math.exp(-9 * Math.min(delta, 0.05)));
     const stride = Math.sin(clock.elapsedTime * 8.4) * 0.58 * motionRef.current;
     const idle = Math.sin(clock.elapsedTime * 1.7) * 0.025;
-    if (bodyRef.current) bodyRef.current.position.y = (seated ? 0.18 : 0) + Math.abs(Math.sin(clock.elapsedTime * 8.4)) * 0.018 * motionRef.current + idle * 0.2;
-    if (leftArmRef.current) leftArmRef.current.rotation.x = seated ? -0.25 : stride + idle;
-    if (rightArmRef.current) rightArmRef.current.rotation.x = seated ? -0.25 : -stride - idle;
+    if (bodyRef.current) {
+      const interactionLift = kissing ? (config.key === 'aldane' ? -0.045 : 0.075) : dancing ? Math.abs(Math.sin(clock.elapsedTime * 2.1)) * 0.018 : 0;
+      bodyRef.current.position.y = (seated ? 0.13 : 0) + interactionLift + Math.abs(Math.sin(clock.elapsedTime * 8.4)) * 0.018 * motionRef.current + idle * 0.2;
+      bodyRef.current.rotation.x = MathUtils.lerp(bodyRef.current.rotation.x, kissing ? -0.11 : 0, 1 - Math.exp(-7 * delta));
+      bodyRef.current.rotation.z = dancing ? Math.sin(clock.elapsedTime * 1.55) * 0.035 : 0;
+    }
+    if (leftArmRef.current) {
+      leftArmRef.current.rotation.x = seated ? -0.25 : dancing ? -1.02 + Math.sin(clock.elapsedTime * 1.55) * 0.08 : kissing ? -0.55 : stride + idle;
+      leftArmRef.current.rotation.z = dancing ? -0.2 : 0;
+    }
+    if (rightArmRef.current) {
+      rightArmRef.current.rotation.x = seated ? -0.25 : dancing ? -1.02 - Math.sin(clock.elapsedTime * 1.55) * 0.08 : kissing ? -0.55 : -stride - idle;
+      rightArmRef.current.rotation.z = dancing ? 0.2 : 0;
+    }
     if (leftLegRef.current) leftLegRef.current.rotation.x = seated ? -Math.PI / 2 : -stride;
     if (rightLegRef.current) rightLegRef.current.rotation.x = seated ? -Math.PI / 2 : stride;
   });
@@ -150,10 +208,6 @@ export function AvatarBody({
             <capsuleGeometry args={[0.24, 0.34, 6, 12]} />
             <meshStandardMaterial color={config.outfit} roughness={0.84} />
           </mesh>
-          <mesh position={[0, 1.15, 0.23]} rotation={[Math.PI / 2, 0, 0]}>
-            <torusGeometry args={[0.12, 0.01, 8, 24, Math.PI]} />
-            <meshStandardMaterial color={config.accent} metalness={0.45} roughness={0.34} />
-          </mesh>
         </>
       ) : (
         <>
@@ -161,15 +215,18 @@ export function AvatarBody({
             <cylinderGeometry args={[0.26, 0.215, 0.78, 12]} />
             <meshStandardMaterial color={config.outfit} roughness={0.9} />
           </mesh>
-          <mesh position={[0, 1.34, 0.185]} rotation={[Math.PI / 2, 0, 0]}>
-            <torusGeometry args={[0.155, 0.012, 8, 28, Math.PI]} />
-            <meshStandardMaterial color="#c9c5c2" metalness={0.7} roughness={0.28} />
-          </mesh>
+          {[-1, 1].map(side => (
+            <mesh key={side} position={[side * 0.275, 1.16, 0]} rotation={[0, 0, Math.PI / 2]}>
+              <capsuleGeometry args={[0.075, 0.12, 4, 8]} />
+              <meshStandardMaterial color={config.outfit} roughness={0.9} />
+            </mesh>
+          ))}
         </>
       )}
 
       <mesh position={[0, 1.3, 0]}><cylinderGeometry args={[0.075, 0.085, 0.16, 12]} /><meshStandardMaterial color={config.skin} roughness={0.74} /></mesh>
       <Face config={config} />
+      <Necklace config={config} />
 
       {[-1, 1].map(side => (
         <group key={`arm-${side}`} ref={side < 0 ? leftArmRef : rightArmRef} position={[side * (isSantana ? 0.27 : 0.31), 1.12, 0]} rotation={[0, 0, side * (isSantana ? -0.08 : -0.035)]}>
@@ -187,11 +244,7 @@ export function AvatarBody({
             <capsuleGeometry args={[isSantana ? 0.065 : 0.08, 0.4, 4, 8]} />
             <meshStandardMaterial color={isSantana ? config.skin : trousers} roughness={0.86} />
           </mesh>
-          <mesh position={[0, -0.53, 0.055]} scale={[isSantana ? 0.13 : 0.15, 0.075, 0.25]}>
-            <boxGeometry args={[1, 1, 1]} />
-            <meshStandardMaterial color={isSantana ? '#f6eee5' : '#17151a'} roughness={0.8} />
-          </mesh>
-          {isSantana && <mesh position={[0, -0.49, 0.12]}><torusGeometry args={[0.065, 0.012, 7, 16]} /><meshStandardMaterial color={config.accent} metalness={0.38} /></mesh>}
+          <group position={[0, -0.53, 0.055]}><Shoe feminine={isSantana} /></group>
         </group>
       ))}
     </group>

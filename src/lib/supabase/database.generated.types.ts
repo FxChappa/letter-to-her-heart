@@ -132,6 +132,7 @@ export type Database = {
           created_at: string
           display_name: string
           id: string
+          new_chapter_completed_at: string | null
           role: string
           updated_at: string
         }
@@ -141,6 +142,7 @@ export type Database = {
           created_at?: string
           display_name: string
           id: string
+          new_chapter_completed_at?: string | null
           role: string
           updated_at?: string
         }
@@ -150,6 +152,7 @@ export type Database = {
           created_at?: string
           display_name?: string
           id?: string
+          new_chapter_completed_at?: string | null
           role?: string
           updated_at?: string
         }

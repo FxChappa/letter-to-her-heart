@@ -46,11 +46,28 @@ export const dampAngle = (current: number, target: number, smoothing: number): n
   return current + difference * smoothing;
 };
 
-export type InteractionKind = 'chair' | 'memories' | null;
+export type SeatTarget = {
+  id: string;
+  label: string;
+  position: VectorTuple;
+  exitPosition: VectorTuple;
+  rotation: number;
+};
 
-const diningChairs: VectorTuple[] = [
-  [2.15, 0.18, -1.05],
-  [4.05, 0.18, -1.05],
+export type WorldInteraction =
+  | { kind: 'seat'; seatId: string }
+  | { kind: 'memories' }
+  | null;
+
+export const seatTargets: SeatTarget[] = [
+  { id: 'sofa-left', label: 'Sit on the sofa', position: [-3.66, 0.18, 1.38], exitPosition: [-3.66, 0, 0.68], rotation: Math.PI },
+  { id: 'sofa-center', label: 'Sit on the sofa', position: [-2.96, 0.18, 1.38], exitPosition: [-2.96, 0, 0.68], rotation: Math.PI },
+  { id: 'sofa-right', label: 'Sit on the sofa', position: [-2.26, 0.18, 1.38], exitPosition: [-2.26, 0, 0.68], rotation: Math.PI },
+  { id: 'living-chair', label: 'Sit in the chair', position: [-1.32, 0.18, 2.12], exitPosition: [-1.32, 0, 1.35], rotation: Math.PI },
+  { id: 'dining-aldane', label: 'Sit at the table', position: [2.15, 0.18, -1.05], exitPosition: [2.15, 0, -0.52], rotation: Math.PI },
+  { id: 'dining-santana', label: 'Sit at the table', position: [4.05, 0.18, -1.05], exitPosition: [4.05, 0, -0.52], rotation: Math.PI },
+  { id: 'dining-south-left', label: 'Sit at the table', position: [2.15, 0.18, -3.15], exitPosition: [2.15, 0, -3.72], rotation: 0 },
+  { id: 'dining-south-right', label: 'Sit at the table', position: [4.05, 0.18, -3.15], exitPosition: [4.05, 0, -3.72], rotation: 0 },
 ];
 
 const distanceTo = (pose: PlayerPose, target: VectorTuple): number =>
@@ -85,19 +102,21 @@ export const resolveMovement = (pose: PlayerPose, input: MovementInput, deltaSec
     rotation,
     moving: true,
     activity: 'walking',
+    seatId: null,
     room: 'home',
   };
 };
 
-export const isNearDiningChair = (pose: PlayerPose): boolean => {
-  return diningChairs.some(chair => distanceTo(pose, chair) < 1.3);
-};
+export const getSeatById = (seatId: string | null): SeatTarget | null =>
+  seatTargets.find(seat => seat.id === seatId) ?? null;
 
-export const getNearestDiningChair = (pose: PlayerPose): VectorTuple =>
-  diningChairs.reduce((nearest, chair) => distanceTo(pose, chair) < distanceTo(pose, nearest) ? chair : nearest);
-
-export const getNearbyInteraction = (pose: PlayerPose): InteractionKind => {
-  if (isNearDiningChair(pose)) return 'chair';
-  if (distanceTo(pose, [-5.45, 0, 1.35]) < 1.25) return 'memories';
+export const getNearbyInteraction = (pose: PlayerPose, occupiedSeatIds: string[] = []): WorldInteraction => {
+  const nearbySeat = seatTargets
+    .filter(seat => !occupiedSeatIds.includes(seat.id))
+    .map(seat => ({ seat, distance: distanceTo(pose, seat.position) }))
+    .filter(candidate => candidate.distance < 1.05)
+    .sort((a, b) => a.distance - b.distance)[0]?.seat;
+  if (nearbySeat) return { kind: 'seat', seatId: nearbySeat.id };
+  if (distanceTo(pose, [-5.45, 0, 1.35]) < 1.25) return { kind: 'memories' };
   return null;
 };

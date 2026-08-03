@@ -5,6 +5,7 @@ import { Navigate, RouterProvider, useLocation } from './app/router';
 import { AmbientAudioProvider } from './features/audio/AmbientAudioProvider';
 import { AuthProvider } from './features/auth/AuthProvider';
 import { LoginPage } from './features/auth/LoginPage';
+import { WelcomePage } from './features/auth/WelcomePage';
 import { ProtectedRoute } from './features/auth/ProtectedRoute';
 import { LetterExperience } from './features/letters/LetterExperience';
 import { NewChapterPage } from './features/letters/NewChapterPage';
@@ -13,7 +14,8 @@ import { registerServiceWorker } from './lib/pwa/registerServiceWorker';
 
 function AppRoutes() {
   const location = useLocation();
-  if (location.pathname === '/' || location.pathname === '/letters') return <LetterExperience />;
+  if (location.pathname === '/') return <WelcomePage />;
+  if (location.pathname === '/letters') return <LetterExperience />;
   if (location.pathname === '/letters/new-chapter') return <NewChapterPage />;
   if (location.pathname === '/login') return <LoginPage />;
   if (location.pathname === '/our-space') {

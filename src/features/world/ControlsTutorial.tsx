@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Gamepad2, Hand, MessageCircle, Mic, Monitor, MousePointer2, Move, Sparkles, Tablet, X } from 'lucide-react';
-import { getSupabaseClient } from '../../lib/supabase/client';
 import type { Profile } from '../../lib/supabase/database.types';
+import { useAuth } from '../auth/AuthProvider';
 import { hasCompletedControlsTutorial, isTouchFirstDevice, markControlsTutorialComplete } from './tutorialStorage';
 
 type TutorialItem = {
@@ -34,7 +34,9 @@ export function ControlsTutorial({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  const auth = useAuth();
   const [remember, setRemember] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const touchFirst = useMemo(() => isTouchFirstDevice(), []);
   const items = touchFirst ? touchItems : desktopItems;
 
@@ -50,12 +52,10 @@ export function ControlsTutorial({
   const enter = async () => {
     if (remember) {
       markControlsTutorialComplete();
-      const supabase = getSupabaseClient();
-      if (supabase && !profile.id.startsWith('demo-')) {
-        await supabase
-          .from('profiles')
-          .update({ controls_tutorial_complete: true })
-          .eq('id', profile.id);
+      try {
+        await auth.updateProfileProgress({ controls_tutorial_complete: true });
+      } catch {
+        setError('This preference is saved on this device, but the profile could not be updated.');
       }
     }
     onOpenChange(false);
@@ -89,6 +89,7 @@ export function ControlsTutorial({
           <input type="checkbox" checked={remember} onChange={event => setRemember(event.target.checked)} />
           <span>Don&apos;t show this again</span>
         </label>
+        {error && <p className="form-error" role="alert">{error}</p>}
         <button className="controls-tutorial__enter" type="button" onClick={() => void enter()}>
           Enter our space
         </button>
