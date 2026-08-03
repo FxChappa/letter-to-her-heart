@@ -1,6 +1,5 @@
-import { lazy, Suspense, useState } from 'react';
-import { DoorOpen, Heart, LogOut } from 'lucide-react';
-import { Link } from '../../app/router';
+import { lazy, Suspense, useEffect, useState } from 'react';
+import { BookOpen, DoorOpen, LogOut } from 'lucide-react';
 import { LoadingScreen } from '../../components/LoadingScreen';
 import { productName, productSubtitle } from '../../config/branding';
 import { useAmbientAudio } from '../audio/AmbientAudioProvider';
@@ -24,19 +23,29 @@ export function OurSpacePage() {
   const audio = useAmbientAudio();
   const [tutorialOpen, setTutorialOpen] = useState(() => shouldOpenControlsTutorial(profile));
   const [memoriesOpen, setMemoriesOpen] = useState(false);
+  const [introVisible, setIntroVisible] = useState(true);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setIntroVisible(false), 5200);
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (date.state.phase !== 'normal') audio.setMood('date');
+  }, [audio, date.state.phase]);
 
   return (
     <main className="space-page">
       <header className="space-header">
-        <div>
+        <div className="space-header__brand">
           <span>{productSubtitle}</span>
           <h1>{productName}</h1>
         </div>
         <nav aria-label="Private space navigation">
-          <Link to="/" aria-label="Revisit the letters" title="Letters">
-            <Heart size={16} fill="currentColor" />
+          <button type="button" onClick={() => setMemoriesOpen(true)} aria-label="Open letters and memories" title="Letters and memories">
+            <BookOpen size={16} />
             Letters
-          </Link>
+          </button>
           <SpaceSettings onShowControls={() => setTutorialOpen(true)} />
           <button type="button" onClick={() => void auth.signOut()} aria-label="Sign out" title="Sign out">
             <LogOut size={16} />
@@ -45,13 +54,15 @@ export function OurSpacePage() {
         </nav>
       </header>
 
-      <section className="avatar-intro" aria-label="Avatar introduction">
-        <DoorOpen aria-hidden="true" />
-        <div>
-          <p>Welcome, {profile.display_name}.</p>
-          <span>You are controlling your own avatar. Use WASD, arrow keys, or the touch joystick.</span>
-        </div>
-      </section>
+      {introVisible && (
+        <section className="avatar-intro" aria-label="Avatar introduction">
+          <DoorOpen aria-hidden="true" />
+          <div>
+            <p>Welcome home, {profile.display_name}.</p>
+            <span>Your avatar is ready. Walk in and make yourself at home.</span>
+          </div>
+        </section>
+      )}
 
       <Suspense fallback={<LoadingScreen message="Opening the shared home..." />}>
         <SharedHome

@@ -1,69 +1,199 @@
 import { useFrame } from '@react-three/fiber';
-import { useRef } from 'react';
+import { MutableRefObject, useRef } from 'react';
 import { Group, MathUtils } from 'three';
 import type { AvatarConfig } from '../../config/avatars';
+import { dampAngle } from './movement';
 import type { PlayerPose } from './worldTypes';
 
-export function AvatarBody({ config, subtle = false, seated = false }: { config: AvatarConfig; subtle?: boolean; seated?: boolean }) {
-  const scale = config.scale;
+type AvatarActivity = PlayerPose['activity'];
+
+function Glasses({ color }: { color: string }) {
   return (
-    <group scale={[scale, scale, scale]} position={seated ? [0, 0.18, 0] : [0, 0, 0]}>
-      <mesh position={[0, 0.62, 0]}>
-        <capsuleGeometry args={[0.22, 0.62, 5, 10]} />
-        <meshStandardMaterial color={config.outfit} roughness={0.82} />
+    <group position={[0, 1.52, 0.205]}>
+      {[-0.082, 0.082].map(x => (
+        <group key={x} position={[x, 0, 0]}>
+          <mesh position={[0, 0.045, 0]}><boxGeometry args={[0.13, 0.012, 0.014]} /><meshStandardMaterial color={color} metalness={0.25} /></mesh>
+          <mesh position={[0, -0.045, 0]}><boxGeometry args={[0.13, 0.012, 0.014]} /><meshStandardMaterial color={color} metalness={0.25} /></mesh>
+          <mesh position={[-0.059, 0, 0]}><boxGeometry args={[0.012, 0.09, 0.014]} /><meshStandardMaterial color={color} metalness={0.25} /></mesh>
+          <mesh position={[0.059, 0, 0]}><boxGeometry args={[0.012, 0.09, 0.014]} /><meshStandardMaterial color={color} metalness={0.25} /></mesh>
+        </group>
+      ))}
+      <mesh><boxGeometry args={[0.035, 0.01, 0.012]} /><meshStandardMaterial color={color} metalness={0.25} /></mesh>
+    </group>
+  );
+}
+
+function Hair({ config }: { config: AvatarConfig }) {
+  if (config.key === 'aldane') {
+    return (
+      <group>
+        <mesh position={[0, 1.7, -0.025]} scale={[1.02, 0.62, 0.9]}>
+          <sphereGeometry args={[0.22, 14, 10]} />
+          <meshStandardMaterial color={config.hair} roughness={0.96} />
+        </mesh>
+        {[-0.14, -0.05, 0.05, 0.14].map((x, index) => (
+          <mesh key={x} position={[x, 1.755 + (index % 2) * 0.012, 0]}>
+            <sphereGeometry args={[0.055, 9, 7]} />
+            <meshStandardMaterial color={config.hair} roughness={1} />
+          </mesh>
+        ))}
+      </group>
+    );
+  }
+
+  const curls = [
+    [-0.24, 1.6, -0.03], [0.24, 1.6, -0.03], [-0.25, 1.46, -0.04], [0.25, 1.46, -0.04],
+    [-0.2, 1.34, -0.06], [0.2, 1.34, -0.06], [-0.15, 1.72, -0.07], [0.15, 1.72, -0.07],
+  ] as const;
+  const buns = [[-0.16, 1.83, -0.01], [0.16, 1.83, -0.01], [-0.29, 1.72, -0.02], [0.29, 1.72, -0.02]] as const;
+
+  return (
+    <group>
+      <mesh position={[0, 1.61, -0.1]} scale={[1.05, 1.18, 0.82]}>
+        <sphereGeometry args={[0.23, 16, 12]} />
+        <meshStandardMaterial color={config.hair} roughness={0.98} />
       </mesh>
-      <mesh position={[0, 1.16, 0]}>
-        <sphereGeometry args={[0.19, 16, 16]} />
+      {curls.map((position, index) => (
+        <mesh key={index} position={position}>
+          <sphereGeometry args={[0.095, 9, 7]} />
+          <meshStandardMaterial color={config.hair} roughness={1} />
+        </mesh>
+      ))}
+      {buns.map((position, index) => (
+        <mesh key={index} position={position} scale={[1, 0.9, 0.92]}>
+          <sphereGeometry args={[0.105, 10, 8]} />
+          <meshStandardMaterial color={config.hair} roughness={1} />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
+function Face({ config }: { config: AvatarConfig }) {
+  return (
+    <group>
+      <mesh position={[0, 1.5, 0]} scale={[0.96, 1.08, 0.9]}>
+        <sphereGeometry args={[0.21, 18, 16]} />
         <meshStandardMaterial color={config.skin} roughness={0.72} />
       </mesh>
-      <mesh position={[0, 1.34, -0.02]}>
-        <sphereGeometry args={[config.key === 'santana' ? 0.22 : 0.19, 14, 14]} />
-        <meshStandardMaterial color={config.hair} roughness={0.9} />
-      </mesh>
-      {config.key === 'santana' && (
+      <mesh position={[-0.066, 1.53, 0.19]}><sphereGeometry args={[0.018, 8, 8]} /><meshStandardMaterial color="#211315" /></mesh>
+      <mesh position={[0.066, 1.53, 0.19]}><sphereGeometry args={[0.018, 8, 8]} /><meshStandardMaterial color="#211315" /></mesh>
+      <mesh position={[0, 1.48, 0.2]} scale={[0.55, 0.9, 0.45]}><sphereGeometry args={[0.035, 8, 8]} /><meshStandardMaterial color={config.skin} roughness={0.7} /></mesh>
+      {config.key === 'aldane' && (
         <>
-          <mesh position={[-0.13, 1.43, -0.02]}>
-            <sphereGeometry args={[0.1, 12, 12]} />
-            <meshStandardMaterial color={config.hair} roughness={0.9} />
+          <mesh position={[0, 1.405, 0.13]} scale={[1.05, 0.62, 0.42]}>
+            <sphereGeometry args={[0.17, 14, 10]} />
+            <meshStandardMaterial color="#241617" roughness={0.96} />
           </mesh>
-          <mesh position={[0.13, 1.43, -0.02]}>
-            <sphereGeometry args={[0.1, 12, 12]} />
-            <meshStandardMaterial color={config.hair} roughness={0.9} />
-          </mesh>
-          <mesh position={[0, 1.29, 0.18]}>
-            <boxGeometry args={[0.34, 0.035, 0.02]} />
-            <meshStandardMaterial color={config.accent} roughness={0.42} />
-          </mesh>
-          <mesh position={[-0.09, 1.29, 0.2]}>
-            <torusGeometry args={[0.055, 0.006, 8, 16]} />
-            <meshStandardMaterial color={config.accent} roughness={0.36} />
-          </mesh>
-          <mesh position={[0.09, 1.29, 0.2]}>
-            <torusGeometry args={[0.055, 0.006, 8, 16]} />
-            <meshStandardMaterial color={config.accent} roughness={0.36} />
+          <mesh position={[0, 1.455, 0.196]} scale={[1, 0.4, 0.45]}>
+            <sphereGeometry args={[0.085, 12, 8]} />
+            <meshStandardMaterial color={config.skin} roughness={0.74} />
           </mesh>
         </>
       )}
-      <mesh position={[-0.19, 0.56, 0]}>
-        <capsuleGeometry args={[0.06, 0.48, 4, 8]} />
-        <meshStandardMaterial color={config.skin} roughness={0.78} />
+      <mesh position={[0, 1.405, 0.205]} scale={[1, 0.35, 0.45]}>
+        <sphereGeometry args={[0.052, 10, 8]} />
+        <meshStandardMaterial color={config.key === 'santana' ? '#a9625d' : '#694033'} roughness={0.75} />
       </mesh>
-      <mesh position={[0.19, 0.56, 0]}>
-        <capsuleGeometry args={[0.06, 0.48, 4, 8]} />
-        <meshStandardMaterial color={config.skin} roughness={0.78} />
-      </mesh>
-      <mesh position={seated ? [-0.09, 0.28, 0.18] : [-0.09, 0.1, 0]} rotation={seated ? [-Math.PI / 2, 0, 0] : [0, 0, 0]}>
-        <capsuleGeometry args={[0.065, 0.43, 4, 8]} />
-        <meshStandardMaterial color={subtle ? '#4f2c39' : config.outfit} roughness={0.82} />
-      </mesh>
-      <mesh position={seated ? [0.09, 0.28, 0.18] : [0.09, 0.1, 0]} rotation={seated ? [-Math.PI / 2, 0, 0] : [0, 0, 0]}>
-        <capsuleGeometry args={[0.065, 0.43, 4, 8]} />
-        <meshStandardMaterial color={subtle ? '#4f2c39' : config.outfit} roughness={0.82} />
-      </mesh>
-      <mesh position={[0, 1.18, 0.185]}>
-        <sphereGeometry args={[0.018, 8, 8]} />
-        <meshStandardMaterial color="#241515" />
-      </mesh>
+      {config.glasses && <Glasses color={config.accent} />}
+      <Hair config={config} />
+    </group>
+  );
+}
+
+export function AvatarBody({
+  config,
+  subtle = false,
+  seated = false,
+  activity = 'idle',
+  activityRef,
+}: {
+  config: AvatarConfig;
+  subtle?: boolean;
+  seated?: boolean;
+  activity?: AvatarActivity;
+  activityRef?: MutableRefObject<AvatarActivity>;
+}) {
+  const scale = config.scale;
+  const bodyRef = useRef<Group>(null);
+  const leftArmRef = useRef<Group>(null);
+  const rightArmRef = useRef<Group>(null);
+  const leftLegRef = useRef<Group>(null);
+  const rightLegRef = useRef<Group>(null);
+  const motionRef = useRef(0);
+
+  useFrame(({ clock }, delta) => {
+    const currentActivity = activityRef?.current ?? activity;
+    const moving = currentActivity === 'walking';
+    motionRef.current = MathUtils.lerp(motionRef.current, moving ? 1 : 0, 1 - Math.exp(-9 * Math.min(delta, 0.05)));
+    const stride = Math.sin(clock.elapsedTime * 8.4) * 0.58 * motionRef.current;
+    const idle = Math.sin(clock.elapsedTime * 1.7) * 0.025;
+    if (bodyRef.current) bodyRef.current.position.y = (seated ? 0.18 : 0) + Math.abs(Math.sin(clock.elapsedTime * 8.4)) * 0.018 * motionRef.current + idle * 0.2;
+    if (leftArmRef.current) leftArmRef.current.rotation.x = seated ? -0.25 : stride + idle;
+    if (rightArmRef.current) rightArmRef.current.rotation.x = seated ? -0.25 : -stride - idle;
+    if (leftLegRef.current) leftLegRef.current.rotation.x = seated ? -Math.PI / 2 : -stride;
+    if (rightLegRef.current) rightLegRef.current.rotation.x = seated ? -Math.PI / 2 : stride;
+  });
+
+  const trousers = subtle ? '#3c2733' : config.outfit;
+  const isSantana = config.key === 'santana';
+
+  return (
+    <group ref={bodyRef} scale={[scale, scale, scale]}>
+      {isSantana ? (
+        <>
+          <mesh position={[0, 0.68, 0]}>
+            <cylinderGeometry args={[0.24, 0.34, 0.62, 18]} />
+            <meshStandardMaterial color={config.outfit} roughness={0.86} />
+          </mesh>
+          <mesh position={[0, 1.08, 0]} scale={[1.12, 1, 0.84]}>
+            <capsuleGeometry args={[0.24, 0.34, 6, 12]} />
+            <meshStandardMaterial color={config.outfit} roughness={0.84} />
+          </mesh>
+          <mesh position={[0, 1.15, 0.23]} rotation={[Math.PI / 2, 0, 0]}>
+            <torusGeometry args={[0.12, 0.01, 8, 24, Math.PI]} />
+            <meshStandardMaterial color={config.accent} metalness={0.45} roughness={0.34} />
+          </mesh>
+        </>
+      ) : (
+        <>
+          <mesh position={[0, 0.98, 0]} scale={[1.2, 1, 0.78]}>
+            <cylinderGeometry args={[0.26, 0.215, 0.78, 12]} />
+            <meshStandardMaterial color={config.outfit} roughness={0.9} />
+          </mesh>
+          <mesh position={[0, 1.34, 0.185]} rotation={[Math.PI / 2, 0, 0]}>
+            <torusGeometry args={[0.155, 0.012, 8, 28, Math.PI]} />
+            <meshStandardMaterial color="#c9c5c2" metalness={0.7} roughness={0.28} />
+          </mesh>
+        </>
+      )}
+
+      <mesh position={[0, 1.3, 0]}><cylinderGeometry args={[0.075, 0.085, 0.16, 12]} /><meshStandardMaterial color={config.skin} roughness={0.74} /></mesh>
+      <Face config={config} />
+
+      {[-1, 1].map(side => (
+        <group key={`arm-${side}`} ref={side < 0 ? leftArmRef : rightArmRef} position={[side * (isSantana ? 0.27 : 0.31), 1.12, 0]} rotation={[0, 0, side * (isSantana ? -0.08 : -0.035)]}>
+          <mesh position={[0, -0.28, 0]}>
+            <capsuleGeometry args={[isSantana ? 0.06 : 0.07, 0.43, 4, 8]} />
+            <meshStandardMaterial color={config.skin} roughness={0.78} />
+          </mesh>
+          <mesh position={[0, -0.55, 0.015]}><sphereGeometry args={[0.07, 10, 8]} /><meshStandardMaterial color={config.skin} roughness={0.78} /></mesh>
+        </group>
+      ))}
+
+      {[-1, 1].map(side => (
+        <group key={`leg-${side}`} ref={side < 0 ? leftLegRef : rightLegRef} position={[side * (isSantana ? 0.115 : 0.13), 0.52, 0]}>
+          <mesh position={[0, -0.27, 0]}>
+            <capsuleGeometry args={[isSantana ? 0.065 : 0.08, 0.4, 4, 8]} />
+            <meshStandardMaterial color={isSantana ? config.skin : trousers} roughness={0.86} />
+          </mesh>
+          <mesh position={[0, -0.53, 0.055]} scale={[isSantana ? 0.13 : 0.15, 0.075, 0.25]}>
+            <boxGeometry args={[1, 1, 1]} />
+            <meshStandardMaterial color={isSantana ? '#f6eee5' : '#17151a'} roughness={0.8} />
+          </mesh>
+          {isSantana && <mesh position={[0, -0.49, 0.12]}><torusGeometry args={[0.065, 0.012, 7, 16]} /><meshStandardMaterial color={config.accent} metalness={0.38} /></mesh>}
+        </group>
+      ))}
     </group>
   );
 }
@@ -74,16 +204,17 @@ export function RemoteAvatar({ config, pose }: { config: AvatarConfig; pose: Pla
   useFrame((_state, delta) => {
     const group = groupRef.current;
     if (!group) return;
-    const alpha = Math.min(1, delta * 7.5);
+    const frameDelta = Math.min(delta, 0.05);
+    const alpha = 1 - Math.exp(-9 * frameDelta);
     group.position.x = MathUtils.lerp(group.position.x, pose.position[0], alpha);
     group.position.y = MathUtils.lerp(group.position.y, pose.position[1], alpha);
     group.position.z = MathUtils.lerp(group.position.z, pose.position[2], alpha);
-    group.rotation.y = MathUtils.lerp(group.rotation.y, pose.rotation, alpha);
+    group.rotation.y = dampAngle(group.rotation.y, pose.rotation, alpha);
   });
 
   return (
     <group ref={groupRef} position={pose.position} rotation={[0, pose.rotation, 0]}>
-      <AvatarBody config={config} subtle seated={pose.activity === 'sitting'} />
+      <AvatarBody config={config} subtle seated={pose.activity === 'sitting'} activity={pose.activity} />
       <mesh position={[0, 1.82 * config.scale, 0]}>
         <sphereGeometry args={[0.05, 10, 10]} />
         <meshStandardMaterial color={config.accent} emissive={config.accent} emissiveIntensity={0.35} />

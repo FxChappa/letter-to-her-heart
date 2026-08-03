@@ -53,8 +53,8 @@ export function ChatDrawer({ profile, demoMode }: { profile: Profile; demoMode: 
       <aside className={open ? 'chat-drawer chat-drawer--open' : 'chat-drawer'} aria-label="Private chat" aria-hidden={!open}>
         <header>
           <div>
-            <span>Private chat</span>
-            <strong>Aldane & Santana</strong>
+            <span>Just between us</span>
+            <strong>Aldane &amp; Santana</strong>
           </div>
           <button type="button" onClick={() => setOpen(false)} aria-label="Close private chat"><X /></button>
         </header>
@@ -66,7 +66,7 @@ export function ChatDrawer({ profile, demoMode }: { profile: Profile; demoMode: 
         </div>
         <form className="chat-form" onSubmit={submit}>
           <label htmlFor="chat-message">Message</label>
-          <textarea id="chat-message" value={draft} onChange={event => setDraft(event.target.value)} rows={3} maxLength={1200} placeholder="Write something private..." />
+          <textarea id="chat-message" value={draft} onChange={event => setDraft(event.target.value)} rows={2} maxLength={1200} placeholder="A private note..." />
           {error && <p className="form-error" role="alert">{error}</p>}
           <button type="submit"><Send size={16} /> Send</button>
         </form>

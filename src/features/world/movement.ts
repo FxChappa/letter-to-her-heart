@@ -10,18 +10,41 @@ type Rect = {
 const bounds: Rect = { minX: -6, maxX: 6, minZ: -4.2, maxZ: 4.2 };
 
 const obstacles: Rect[] = [
-  { minX: -3.8, maxX: -1.4, minZ: 0.7, maxZ: 2.2 },
-  { minX: -4.9, maxX: -3.4, minZ: 2.0, maxZ: 3.4 },
-  { minX: -0.8, maxX: 1.1, minZ: -0.8, maxZ: 0.8 },
-  { minX: 2.1, maxX: 4.2, minZ: -2.9, maxZ: -1.3 },
-  { minX: 0.1, maxX: 4.9, minZ: 2.9, maxZ: 4.2 },
-  { minX: -5.9, maxX: -4.7, minZ: -4.1, maxZ: -2.6 },
+  { minX: -4.65, maxX: -1.6, minZ: 1.0, maxZ: 2.15 },
+  { minX: -4.85, maxX: -4.0, minZ: 1.7, maxZ: 3.15 },
+  { minX: -3.4, maxX: -2.0, minZ: 0.05, maxZ: 0.85 },
+  { minX: -5.95, maxX: -5.4, minZ: -2.15, maxZ: -0.75 },
+  { minX: 1.65, maxX: 4.55, minZ: -2.85, maxZ: -1.35 },
+  { minX: 0.05, maxX: 5.2, minZ: 3.0, maxZ: 4.2 },
+  { minX: -0.8, maxX: 2.25, minZ: 1.6, maxZ: 2.7 },
 ];
 
 const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value));
 
 const isInsideObstacle = (x: number, z: number) =>
   obstacles.some(obstacle => x >= obstacle.minX && x <= obstacle.maxX && z >= obstacle.minZ && z <= obstacle.maxZ);
+
+export const normalizeMovementInput = (input: MovementInput): MovementInput => {
+  const length = Math.hypot(input.x, input.z);
+  if (length <= 1) return input;
+  return { x: input.x / length, z: input.z / length };
+};
+
+export const toCameraRelativeMovement = (input: MovementInput, cameraYaw: number): MovementInput => {
+  const normalized = normalizeMovementInput(input);
+  const sin = Math.sin(cameraYaw);
+  const cos = Math.cos(cameraYaw);
+
+  return {
+    x: normalized.z * sin - normalized.x * cos,
+    z: normalized.z * cos + normalized.x * sin,
+  };
+};
+
+export const dampAngle = (current: number, target: number, smoothing: number): number => {
+  const difference = Math.atan2(Math.sin(target - current), Math.cos(target - current));
+  return current + difference * smoothing;
+};
 
 export type InteractionKind = 'chair' | 'memories' | null;
 
@@ -40,9 +63,10 @@ export const resolveMovement = (pose: PlayerPose, input: MovementInput, deltaSec
   const speed = 2.35;
   const nx = input.x / length;
   const nz = input.z / length;
+  const intensity = Math.min(1, length);
   const current = pose.position;
-  let nextX = clamp(current[0] + nx * speed * deltaSeconds, bounds.minX, bounds.maxX);
-  let nextZ = clamp(current[2] + nz * speed * deltaSeconds, bounds.minZ, bounds.maxZ);
+  let nextX = clamp(current[0] + nx * speed * intensity * deltaSeconds, bounds.minX, bounds.maxX);
+  let nextZ = clamp(current[2] + nz * speed * intensity * deltaSeconds, bounds.minZ, bounds.maxZ);
 
   if (isInsideObstacle(nextX, nextZ)) {
     if (!isInsideObstacle(nextX, current[2])) {

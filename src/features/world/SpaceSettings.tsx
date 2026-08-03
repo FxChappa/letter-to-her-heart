@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { CircleHelp, Settings, Volume2, VolumeX, X } from 'lucide-react';
+import { CircleHelp, Flame, Moon, Settings, Volume2, VolumeX, X } from 'lucide-react';
 import { useAmbientAudio } from '../audio/AmbientAudioProvider';
 
 export function SpaceSettings({ onShowControls }: { onShowControls: () => void }) {
@@ -43,6 +43,17 @@ export function SpaceSettings({ onShowControls }: { onShowControls: () => void }
             {audio.playing ? <Volume2 size={17} /> : <VolumeX size={17} />}
             <span>{audio.playing ? 'Atmosphere on' : 'Atmosphere off'}</span>
           </button>
+          <div className="space-settings__mood">
+            <span>Room mood</span>
+            <div role="group" aria-label="Room music mood">
+              <button type="button" className={audio.mood === 'evening' ? 'is-selected' : ''} aria-pressed={audio.mood === 'evening'} onClick={() => audio.setMood('evening')}>
+                <Moon size={15} /> Evening
+              </button>
+              <button type="button" className={audio.mood === 'date' ? 'is-selected' : ''} aria-pressed={audio.mood === 'date'} onClick={() => audio.setMood('date')}>
+                <Flame size={15} /> Date
+              </button>
+            </div>
+          </div>
           <label className="space-settings__volume">
             <span>Atmosphere volume</span>
             <input

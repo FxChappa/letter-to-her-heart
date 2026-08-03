@@ -36,7 +36,7 @@ export function SharedHome({
   const presence = usePresence(profile, pose, demoMode);
   const cameraYaw = useRef(0);
   const mobileInputRef = useRef<MovementInput>({ x: 0, z: 0 });
-  const dragRef = useRef<{ active: boolean; x: number }>({ active: false, x: 0 });
+  const dragRef = useRef<{ pointerId: number | null; x: number }>({ pointerId: null, x: 0 });
 
   const performInteraction = useCallback(() => {
     if (interaction === 'chair') {
@@ -57,6 +57,24 @@ export function SharedHome({
     return () => window.removeEventListener('keydown', interact);
   }, [performInteraction]);
 
+  useEffect(() => {
+    const resetControls = () => {
+      dragRef.current = { pointerId: null, x: 0 };
+      mobileInputRef.current = { x: 0, z: 0 };
+    };
+    const resetWhenHidden = () => {
+      if (document.visibilityState !== 'visible') resetControls();
+    };
+    window.addEventListener('blur', resetControls);
+    window.addEventListener('orientationchange', resetControls);
+    document.addEventListener('visibilitychange', resetWhenHidden);
+    return () => {
+      window.removeEventListener('blur', resetControls);
+      window.removeEventListener('orientationchange', resetControls);
+      document.removeEventListener('visibilitychange', resetWhenHidden);
+    };
+  }, []);
+
   if (!webglAvailable) {
     return (
       <section className="webgl-fallback">
@@ -71,19 +89,22 @@ export function SharedHome({
     if ((event.target as HTMLElement).closest('button, a, textarea, input, .touch-joystick')) return;
     const touchFirst = navigator.maxTouchPoints > 0 || window.matchMedia('(pointer: coarse)').matches;
     if (touchFirst && event.clientX < window.innerWidth * 0.42) return;
-    dragRef.current = { active: true, x: event.clientX };
+    if (dragRef.current.pointerId !== null) return;
+    event.preventDefault();
+    dragRef.current = { pointerId: event.pointerId, x: event.clientX };
     event.currentTarget.setPointerCapture(event.pointerId);
   };
 
   const moveDrag = (event: PointerEvent<HTMLDivElement>) => {
-    if (!dragRef.current.active) return;
+    if (dragRef.current.pointerId !== event.pointerId) return;
+    event.preventDefault();
     const dx = event.clientX - dragRef.current.x;
     dragRef.current.x = event.clientX;
     cameraYaw.current += dx * 0.006;
   };
 
-  const endDrag = () => {
-    dragRef.current.active = false;
+  const endDrag = (event: PointerEvent<HTMLDivElement>) => {
+    if (dragRef.current.pointerId === event.pointerId) dragRef.current = { pointerId: null, x: 0 };
   };
 
   return (
@@ -94,10 +115,11 @@ export function SharedHome({
       onPointerMove={moveDrag}
       onPointerUp={endDrag}
       onPointerCancel={endDrag}
+      onLostPointerCapture={endDrag}
     >
       <Canvas
         dpr={[1, 1.5]}
-        camera={{ position: [0, 3.2, -5.2], fov: 48 }}
+        camera={{ position: [0, 4.15, -5.85], fov: 48 }}
         gl={{ antialias: true, powerPreference: 'high-performance' }}
       >
         <Suspense fallback={null}>
