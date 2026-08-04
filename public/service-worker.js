@@ -1,10 +1,11 @@
-const CACHE_NAME = 'our-little-forever-shell-v2';
+const CACHE_NAME = 'our-little-forever-shell-v3';
 const SHELL_ASSETS = [
   '/',
   '/manifest.webmanifest',
   '/icons/little-forever-icon.svg',
   '/icons/little-forever-192.png',
   '/icons/little-forever-512.png',
+  '/images/our-home-evening.jpg',
 ];
 
 self.addEventListener('install', event => {

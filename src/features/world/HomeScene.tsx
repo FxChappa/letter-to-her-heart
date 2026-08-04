@@ -2,7 +2,7 @@ import { useFrame } from '@react-three/fiber';
 import { ContactShadows, Html } from '@react-three/drei';
 import { useMemo, useRef } from 'react';
 import { AmbientLight, Color, DirectionalLight, Group, MathUtils, PointLight, Vector3 } from 'three';
-import { avatarConfigs, childNpcConfigs } from '../../config/avatars';
+import { avatarConfigs, childNpcConfigs, puppyNpcConfig } from '../../config/avatars';
 import type { AvatarKey, Profile } from '../../lib/supabase/database.types';
 import type { DatePhase } from '../date/dateState';
 import { AvatarBody, RemoteAvatar } from './Avatar';
@@ -369,6 +369,106 @@ function ChildNpc({ index }: { index: number }) {
   );
 }
 
+function PuppyNpc({ settled }: { settled: boolean }) {
+  const groupRef = useRef<Group>(null);
+  const tailRef = useRef<Group>(null);
+  const headRef = useRef<Group>(null);
+  const elapsedRef = useRef(0);
+  const path = puppyNpcConfig.path;
+
+  useFrame((_state, delta) => {
+    elapsedRef.current += Math.min(delta, 0.05);
+    const group = groupRef.current;
+    if (!group) return;
+
+    if (settled) {
+      group.position.set(...path[0]);
+      group.rotation.y = -0.45;
+      if (tailRef.current) tailRef.current.rotation.z = Math.sin(elapsedRef.current * 4.2) * 0.28;
+      if (headRef.current) headRef.current.rotation.y = Math.sin(elapsedRef.current * 1.2) * 0.08;
+      return;
+    }
+
+    const segmentProgress = (elapsedRef.current / 5.4) % path.length;
+    const segmentIndex = Math.floor(segmentProgress);
+    const nextIndex = (segmentIndex + 1) % path.length;
+    const from = path[segmentIndex];
+    const to = path[nextIndex];
+    const rawProgress = segmentProgress - segmentIndex;
+    const easedProgress = rawProgress * rawProgress * (3 - 2 * rawProgress);
+    group.position.x = MathUtils.lerp(from[0], to[0], easedProgress);
+    group.position.z = MathUtils.lerp(from[2], to[2], easedProgress);
+    group.position.y = Math.abs(Math.sin(elapsedRef.current * 5.8)) * 0.016;
+    const targetRotation = Math.atan2(to[0] - from[0], to[2] - from[2]);
+    group.rotation.y = dampAngle(group.rotation.y, targetRotation, 1 - Math.exp(-6 * delta));
+
+    if (tailRef.current) tailRef.current.rotation.z = Math.sin(elapsedRef.current * 8.5) * 0.62;
+    if (headRef.current) headRef.current.rotation.y = Math.sin(elapsedRef.current * 1.7) * 0.1;
+  });
+
+  return (
+    <group ref={groupRef} position={path[0]} scale={0.78}>
+      <Html position={[0, 1.02, 0]} center sprite distanceFactor={6} zIndexRange={[30, 1]}>
+        <span className="npc-name npc-name--pet">{puppyNpcConfig.name}</span>
+      </Html>
+      <mesh position={[0, 0.38, 0]} rotation={[Math.PI / 2, 0, 0]}>
+        <capsuleGeometry args={[0.19, 0.34, 5, 10]} />
+        <meshStandardMaterial color={puppyNpcConfig.coat} roughness={0.92} />
+      </mesh>
+      <group ref={headRef} position={[0, 0.51, 0.34]}>
+        <mesh scale={[1, 0.92, 0.94]}>
+          <sphereGeometry args={[0.22, 14, 11]} />
+          <meshStandardMaterial color={puppyNpcConfig.coat} roughness={0.9} />
+        </mesh>
+        <mesh position={[0, -0.055, 0.18]} scale={[1.1, 0.72, 0.82]}>
+          <sphereGeometry args={[0.13, 12, 9]} />
+          <meshStandardMaterial color={puppyNpcConfig.muzzle} roughness={0.94} />
+        </mesh>
+        {[-1, 1].map(side => (
+          <group key={side}>
+            <mesh position={[side * 0.17, 0.04, -0.015]} rotation={[0.15, 0, side * -0.45]} scale={[0.62, 1.15, 0.48]}>
+              <sphereGeometry args={[0.13, 10, 8]} />
+              <meshStandardMaterial color={puppyNpcConfig.ears} roughness={0.96} />
+            </mesh>
+            <mesh position={[side * 0.07, 0.035, 0.19]}>
+              <sphereGeometry args={[0.022, 8, 8]} />
+              <meshStandardMaterial color="#201417" />
+            </mesh>
+          </group>
+        ))}
+        <mesh position={[0, -0.035, 0.292]} scale={[1.1, 0.82, 0.85]}>
+          <sphereGeometry args={[0.038, 9, 8]} />
+          <meshStandardMaterial color="#24171a" roughness={0.7} />
+        </mesh>
+        <mesh position={[0, -0.11, 0.266]} rotation={[Math.PI / 2, 0, 0]}>
+          <torusGeometry args={[0.038, 0.009, 6, 14, Math.PI]} />
+          <meshStandardMaterial color="#703f3c" />
+        </mesh>
+      </group>
+      {[-1, 1].flatMap(side => [-0.15, 0.15].map(z => (
+        <mesh key={`${side}-${z}`} position={[side * 0.13, 0.13, z]}>
+          <capsuleGeometry args={[0.045, 0.18, 4, 7]} />
+          <meshStandardMaterial color={puppyNpcConfig.coat} roughness={0.94} />
+        </mesh>
+      )))}
+      <mesh position={[0, 0.45, 0.19]}>
+        <torusGeometry args={[0.15, 0.018, 7, 22]} />
+        <meshStandardMaterial color={puppyNpcConfig.collar} roughness={0.72} />
+      </mesh>
+      <mesh position={[0, 0.31, 0.34]}>
+        <sphereGeometry args={[0.035, 9, 8]} />
+        <meshStandardMaterial color="#d9ad62" metalness={0.35} roughness={0.48} />
+      </mesh>
+      <group ref={tailRef} position={[0, 0.47, -0.34]} rotation={[0.7, 0, 0]}>
+        <mesh position={[0, 0.18, 0]}>
+          <capsuleGeometry args={[0.04, 0.28, 4, 7]} />
+          <meshStandardMaterial color={puppyNpcConfig.coat} roughness={0.92} />
+        </mesh>
+      </group>
+    </group>
+  );
+}
+
 function HomeFurniture({ datePhase, roomMood }: { datePhase: DatePhase; roomMood: RoomMood }) {
   const dateActive = datePhase !== 'normal' || roomMood === 'date';
   return (
@@ -644,6 +744,7 @@ export function HomeScene({
       <HomeLighting datePhase={datePhase} roomMood={roomMood} />
 
       <HomeFurniture datePhase={datePhase} roomMood={roomMood} />
+      <PuppyNpc settled={Boolean(coupleInteraction) || datePhase !== 'normal'} />
       <ContactShadows position={[0, 0.025, 0]} opacity={0.28} scale={13} blur={2.4} far={3.2} resolution={256} color="#28161c" />
       <LocalPlayer
         avatarKey={profile.avatar_key}

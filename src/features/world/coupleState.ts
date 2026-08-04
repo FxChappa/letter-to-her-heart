@@ -1,7 +1,7 @@
 import type { VectorTuple } from './worldTypes';
 import type { ProfileRole } from '../../lib/supabase/database.types';
 
-export type CoupleInteractionKind = 'kiss' | 'dance';
+export type CoupleInteractionKind = 'kiss' | 'dance' | 'flowers';
 
 export type CoupleRequest = {
   requestId: string;
@@ -31,6 +31,9 @@ export type CoupleStateEvent =
 
 export const initialCoupleState: CoupleInteractionState = { phase: 'idle' };
 
+export const canInitiateCoupleInteraction = (role: ProfileRole, kind: CoupleInteractionKind): boolean =>
+  kind !== 'flowers' || role === 'aldane';
+
 export const applyCoupleStateEvent = (state: CoupleInteractionState, event: CoupleStateEvent): CoupleInteractionState => {
   if (event.type === 'request-sent') return { phase: 'outgoing', request: event.request };
   if (event.type === 'request-received' && state.phase === 'idle') return { phase: 'incoming', request: event.request };
@@ -53,7 +56,7 @@ export const getCouplePlacement = (
   const interactionFacing = interaction.facing + danceTurn;
   const directionX = Math.sin(interactionFacing);
   const directionZ = Math.cos(interactionFacing);
-  const distanceFromCenter = interaction.kind === 'kiss' ? 0.27 : 0.44;
+  const distanceFromCenter = interaction.kind === 'kiss' ? 0.27 : interaction.kind === 'flowers' ? 0.38 : 0.44;
   const roleOffset = role === 'aldane' ? -distanceFromCenter : distanceFromCenter;
 
   return {

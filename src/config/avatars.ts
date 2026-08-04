@@ -60,3 +60,22 @@ export const childNpcConfigs = [
     position: [5.15, 0, 2.05] as const,
   },
 ];
+
+export const puppyNpcConfig = {
+  name: 'Wren',
+  coat: '#b97b4e',
+  muzzle: '#d9aa79',
+  ears: '#74452f',
+  collar: '#7b284c',
+  path: [
+    [4.82, 0, 2.42],
+    [4.45, 0, 1.72],
+    [3.42, 0, 0.55],
+    [0.25, 0, 0.18],
+    [-3.5, 0, -0.42],
+    [-4.75, 0, -2.35],
+    [-2.4, 0, 0.72],
+    [1.4, 0, 0.46],
+    [4.35, 0, 1.58],
+  ] as const,
+};

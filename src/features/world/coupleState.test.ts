@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { applyCoupleStateEvent, getCouplePlacement, initialCoupleState, type ActiveCoupleInteraction, type CoupleRequest } from './coupleState';
+import { applyCoupleStateEvent, canInitiateCoupleInteraction, getCouplePlacement, initialCoupleState, type ActiveCoupleInteraction, type CoupleRequest } from './coupleState';
 
 const request: CoupleRequest = {
   requestId: 'request-1',
@@ -49,5 +49,21 @@ describe('consensual couple interactions', () => {
 
     expect(laterAldane.position).not.toEqual(start.position);
     expect(distance).toBeCloseTo(0.88);
+  });
+
+  it('keeps flower giving as an Aldane-only action', () => {
+    expect(canInitiateCoupleInteraction('aldane', 'flowers')).toBe(true);
+    expect(canInitiateCoupleInteraction('santana', 'flowers')).toBe(false);
+    expect(canInitiateCoupleInteraction('santana', 'kiss')).toBe(true);
+  });
+
+  it('places the couple face-to-face for the flower moment', () => {
+    const interaction: ActiveCoupleInteraction = { ...request, kind: 'flowers' };
+    const aldane = getCouplePlacement(interaction, 'aldane', request.startedAt);
+    const santana = getCouplePlacement(interaction, 'santana', request.startedAt);
+    const distance = Math.hypot(aldane.position[0] - santana.position[0], aldane.position[2] - santana.position[2]);
+
+    expect(distance).toBeCloseTo(0.76);
+    expect(Math.abs(aldane.rotation - santana.rotation)).toBeCloseTo(Math.PI);
   });
 });

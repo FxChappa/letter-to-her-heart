@@ -146,6 +146,58 @@ function Shoe({ feminine }: { feminine: boolean }) {
   );
 }
 
+function FlowerBouquet() {
+  const flowers = [
+    [-0.13, 0.27, 0.01, '#8d2447'],
+    [0, 0.34, 0.035, '#f1d4be'],
+    [0.14, 0.25, 0, '#a83d5d'],
+    [-0.055, 0.19, 0.08, '#f4d59a'],
+    [0.075, 0.16, 0.09, '#7b284c'],
+  ] as const;
+
+  return (
+    <group position={[0, 0.82, 0.47]} rotation={[-0.14, 0, 0]}>
+      {[-0.1, -0.04, 0.03, 0.1].map((x, index) => (
+        <mesh key={x} position={[x, 0.03 + index * 0.012, 0]} rotation={[0, 0, x * 1.7]}>
+          <cylinderGeometry args={[0.012, 0.015, 0.52, 7]} />
+          <meshStandardMaterial color="#527044" roughness={0.9} />
+        </mesh>
+      ))}
+      <mesh position={[0, -0.08, 0]} rotation={[0, 0, Math.PI]}>
+        <coneGeometry args={[0.17, 0.34, 10]} />
+        <meshStandardMaterial color="#ead7bd" roughness={0.9} />
+      </mesh>
+      {[-1, 1].map(side => (
+        <mesh key={side} position={[side * 0.14, 0.09, 0.01]} rotation={[0, 0, side * -0.7]} scale={[1, 1.8, 0.6]}>
+          <sphereGeometry args={[0.07, 9, 7]} />
+          <meshStandardMaterial color="#607c50" roughness={0.94} />
+        </mesh>
+      ))}
+      {flowers.map(([x, y, z, color], flowerIndex) => (
+        <group key={`${x}-${y}`} position={[x, y, z]}>
+          {Array.from({ length: 6 }, (_, petalIndex) => {
+            const angle = petalIndex / 6 * Math.PI * 2;
+            return (
+              <mesh key={petalIndex} position={[Math.cos(angle) * 0.055, Math.sin(angle) * 0.055, 0]} scale={[1.15, 0.82, 0.55]}>
+                <sphereGeometry args={[0.052, 9, 7]} />
+                <meshStandardMaterial color={color} roughness={0.82} />
+              </mesh>
+            );
+          })}
+          <mesh position={[0, 0, 0.025]}>
+            <sphereGeometry args={[0.035, 9, 7]} />
+            <meshStandardMaterial color={flowerIndex % 2 ? '#d7a74f' : '#e5bd6a'} roughness={0.72} />
+          </mesh>
+        </group>
+      ))}
+      <mesh position={[0, -0.025, 0.18]} rotation={[Math.PI / 2, 0, 0]}>
+        <torusGeometry args={[0.075, 0.012, 6, 18]} />
+        <meshStandardMaterial color="#7b284c" roughness={0.7} />
+      </mesh>
+    </group>
+  );
+}
+
 export function AvatarBody({
   config,
   subtle = false,
@@ -165,6 +217,7 @@ export function AvatarBody({
   const rightArmRef = useRef<Group>(null);
   const leftLegRef = useRef<Group>(null);
   const rightLegRef = useRef<Group>(null);
+  const bouquetRef = useRef<Group>(null);
   const motionRef = useRef(0);
 
   useFrame(({ clock }, delta) => {
@@ -172,24 +225,26 @@ export function AvatarBody({
     const moving = currentActivity === 'walking';
     const kissing = currentActivity === 'kiss';
     const dancing = currentActivity === 'dance';
+    const presentingFlowers = currentActivity === 'flowers';
     motionRef.current = MathUtils.lerp(motionRef.current, moving ? 1 : 0, 1 - Math.exp(-9 * Math.min(delta, 0.05)));
     const stride = Math.sin(clock.elapsedTime * 8.4) * 0.58 * motionRef.current;
     const idle = Math.sin(clock.elapsedTime * 1.7) * 0.025;
     const danceStep = Math.sin(clock.elapsedTime * 1.55) * 0.1;
     if (bodyRef.current) {
-      const interactionLift = kissing ? (config.key === 'aldane' ? -0.06 : 0.13) : dancing ? Math.abs(Math.sin(clock.elapsedTime * 1.55)) * 0.012 : 0;
+      const interactionLift = kissing ? (config.key === 'aldane' ? -0.06 : 0.13) : dancing ? Math.abs(Math.sin(clock.elapsedTime * 1.55)) * 0.012 : presentingFlowers ? 0.01 : 0;
       bodyRef.current.position.y = (seated ? 0.13 : 0) + interactionLift + Math.abs(Math.sin(clock.elapsedTime * 8.4)) * 0.018 * motionRef.current + idle * 0.2;
       bodyRef.current.rotation.x = MathUtils.lerp(bodyRef.current.rotation.x, kissing ? 0.03 : 0, 1 - Math.exp(-7 * delta));
       bodyRef.current.rotation.z = dancing ? Math.sin(clock.elapsedTime * 1.55) * 0.055 : 0;
     }
     if (leftArmRef.current) {
-      leftArmRef.current.rotation.x = seated ? -0.25 : dancing ? -1.02 + Math.sin(clock.elapsedTime * 1.55) * 0.08 : kissing ? -0.55 : stride + idle;
-      leftArmRef.current.rotation.z = dancing ? -0.2 : 0;
+      leftArmRef.current.rotation.x = seated ? -0.25 : dancing ? -1.02 + Math.sin(clock.elapsedTime * 1.55) * 0.08 : kissing ? -0.55 : presentingFlowers ? (config.key === 'aldane' ? -1.08 : -0.82) : stride + idle;
+      leftArmRef.current.rotation.z = dancing ? -0.2 : presentingFlowers ? 0.22 : 0;
     }
     if (rightArmRef.current) {
-      rightArmRef.current.rotation.x = seated ? -0.25 : dancing ? -1.02 - Math.sin(clock.elapsedTime * 1.55) * 0.08 : kissing ? -0.55 : -stride - idle;
-      rightArmRef.current.rotation.z = dancing ? 0.2 : 0;
+      rightArmRef.current.rotation.x = seated ? -0.25 : dancing ? -1.02 - Math.sin(clock.elapsedTime * 1.55) * 0.08 : kissing ? -0.55 : presentingFlowers ? (config.key === 'aldane' ? -1.08 : -0.82) : -stride - idle;
+      rightArmRef.current.rotation.z = dancing ? 0.2 : presentingFlowers ? -0.22 : 0;
     }
+    if (bouquetRef.current) bouquetRef.current.visible = presentingFlowers;
     if (leftLegRef.current) leftLegRef.current.rotation.x = seated ? -Math.PI / 2 : dancing ? danceStep : -stride;
     if (rightLegRef.current) rightLegRef.current.rotation.x = seated ? -Math.PI / 2 : dancing ? -danceStep : stride;
   });
@@ -248,6 +303,7 @@ export function AvatarBody({
           <group position={[0, -0.53, 0.055]}><Shoe feminine={isSantana} /></group>
         </group>
       ))}
+      {!isSantana && <group ref={bouquetRef} visible={activity === 'flowers'}><FlowerBouquet /></group>}
     </group>
   );
 }

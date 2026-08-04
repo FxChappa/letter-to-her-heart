@@ -524,6 +524,8 @@
 .couple-request button{width:40px;height:40px;border:1px solid rgba(244,213,154,.28);border-radius:6px;background:rgba(244,213,154,.1);color:#fff8ef}
 .couple-waiting{position:fixed;z-index:42;left:50%;bottom:max(90px,calc(env(safe-area-inset-bottom) + 80px));transform:translateX(-50%);display:flex;align-items:center;gap:10px;padding:8px 9px 8px 13px;border-radius:8px;background:rgba(24,10,28,.84);font-size:.75rem;backdrop-filter:blur(14px)}
 .couple-end{position:fixed;z-index:42;left:50%;bottom:max(88px,calc(env(safe-area-inset-bottom) + 78px));transform:translateX(-50%);background:rgba(111,37,63,.82)}
+.flower-moment{position:fixed;z-index:42;left:50%;bottom:max(88px,calc(env(safe-area-inset-bottom) + 78px));transform:translateX(-50%);min-height:40px;display:flex;align-items:center;gap:8px;padding:0 14px;border:1px solid rgba(244,213,154,.32);border-radius:8px;background:rgba(73,24,50,.84);color:#f8e5bc;font-size:.76rem;backdrop-filter:blur(14px);animation:flower-moment-in .35s ease both}
+@keyframes flower-moment-in{from{opacity:0;transform:translate(-50%,8px)}to{opacity:1;transform:translate(-50%,0)}}
 
 .chat-preview{position:fixed;z-index:41;right:max(75px,calc(env(safe-area-inset-right) + 61px));bottom:max(22px,calc(env(safe-area-inset-bottom) + 16px));width:min(250px,calc(100vw - 170px));height:48px;padding:7px 10px;border:1px solid rgba(244,213,154,.17);border-radius:8px;background:rgba(24,10,28,.72);color:#fff8ef;text-align:left;backdrop-filter:blur(12px)}
 .chat-preview span{display:block;color:#f4d59a;font-size:.58rem;text-transform:uppercase;letter-spacing:.1em}.chat-preview p{overflow:hidden;margin:3px 0 0;color:rgba(255,248,239,.72);font-size:.7rem;white-space:nowrap;text-overflow:ellipsis}
@@ -539,9 +541,11 @@
 
 @media(max-width:900px){.couple-actions .couple-actions__preview{display:none}}
 
-@media(max-width:720px){.new-chapter-overlay__letter{padding:30px 22px 20px}.new-chapter-overlay__body{font-size:1.08rem;line-height:1.55}.couple-actions{bottom:max(82px,calc(env(safe-area-inset-bottom) + 72px));max-width:calc(100% - 138px);flex-wrap:wrap;justify-content:center}.couple-actions button{font-size:.68rem;padding-inline:8px}.couple-request{top:auto;bottom:max(82px,calc(env(safe-area-inset-bottom) + 72px));grid-template-columns:auto minmax(0,1fr) 38px 38px}.couple-request>span{display:none}.couple-request button{width:36px;height:36px}.chat-preview{display:none}.memory-shelf__body{grid-template-columns:1fr}.memory-shelf article{padding:24px 20px}.memory-shelf nav{padding-bottom:4px}.memory-shelf nav button{min-width:max-content}}
+@media(min-width:721px) and (max-width:900px){.voice-controls{bottom:max(162px,calc(env(safe-area-inset-bottom) + 150px))}.memory-fab{bottom:max(222px,calc(env(safe-area-inset-bottom) + 210px))}}
 
-@media(max-height:560px) and (orientation:landscape){.new-chapter-overlay{place-items:start center}.new-chapter-overlay__letter{max-height:calc(100svh - 20px);padding-block:22px}.new-chapter-overlay__body{font-size:1rem}.couple-request{top:62px;bottom:auto}.couple-actions{bottom:max(12px,env(safe-area-inset-bottom))}}
+@media(max-width:720px){.new-chapter-overlay__letter{padding:30px 22px 20px}.new-chapter-overlay__body{font-size:1.08rem;line-height:1.55}.couple-actions{bottom:max(226px,calc(env(safe-area-inset-bottom) + 214px));width:min(356px,calc(100% - 24px));display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}.couple-actions button{min-width:0;font-size:.64rem;gap:5px;padding-inline:6px;white-space:nowrap}.couple-request{top:auto;bottom:max(82px,calc(env(safe-area-inset-bottom) + 72px));grid-template-columns:auto minmax(0,1fr) 38px 38px}.couple-request>span{display:none}.couple-request button{width:36px;height:36px}.chat-preview{display:none}.memory-shelf__body{grid-template-columns:1fr}.memory-shelf article{padding:24px 20px}.memory-shelf nav{padding-bottom:4px}.memory-shelf nav button{min-width:max-content}}
+
+@media(max-height:560px) and (orientation:landscape){.new-chapter-overlay{place-items:start center}.new-chapter-overlay__letter{max-height:calc(100svh - 20px);padding-block:22px}.new-chapter-overlay__body{font-size:1rem}.couple-request{top:62px;bottom:auto}.couple-actions{bottom:max(12px,env(safe-area-inset-bottom));left:max(14px,env(safe-area-inset-left));width:min(330px,calc(100% - 322px));transform:none}.chat-preview{display:none}}
 
 .space-settings__mood button {
   min-height: 36px;

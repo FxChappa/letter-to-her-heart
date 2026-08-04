@@ -8,7 +8,7 @@ export type PlayerPose = {
   position: VectorTuple;
   rotation: number;
   moving: boolean;
-  activity: 'idle' | 'walking' | 'sitting' | 'kiss' | 'dance';
+  activity: 'idle' | 'walking' | 'sitting' | 'kiss' | 'dance' | 'flowers';
   seatId: string | null;
   room: 'home';
 };

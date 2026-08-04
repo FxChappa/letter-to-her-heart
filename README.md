@@ -111,7 +111,7 @@ Permissions come from the authenticated profile role, never a browser-supplied d
 
 ## Realtime And Voice
 
-Supabase Presence shares whether each person is online. Position, rotation, room, activity, and seat identity use ephemeral private Broadcast messages throttled to about ten updates per second; remote avatars interpolate between updates. Sitting, standing, kissing, and dancing use synchronized private interaction state. Kiss and dance requests require the other person to accept before either avatar moves into the interaction.
+Supabase Presence shares whether each person is online. Position, rotation, room, activity, and seat identity use ephemeral private Broadcast messages throttled to about ten updates per second; remote avatars interpolate between updates. Sitting, standing, kissing, dancing, and giving flowers use synchronized private interaction state. Couple moments require the other person to accept before either avatar moves into the interaction, and the flower action is available only to Aldane. Wren is a lightweight local puppy NPC who roams the home and settles near the children during date and couple moments.
 
 Chat uses database-backed Realtime updates. Date events and WebRTC signaling use authenticated private Broadcast channels. In the Supabase dashboard, open **Realtime → Settings** and disable **Allow public access** if you want the entire project to reject public Realtime channels. The app’s own channels are already private.
 
@@ -161,14 +161,15 @@ Manual two-browser check:
 2. Confirm the movement tutorial adapts to desktop and touch controls.
 3. Move both avatars and verify presence, activity, interpolation, and reconnect behavior.
 4. Sit and stand from the sofa, living-room chair, and both dining chairs; confirm occupied seats cannot be reused.
-5. Request a kiss and a dance in both directions; test accept, **Not right now**, completion, and **End dance**.
+5. Request a kiss and a dance in both directions; as Aldane, give Santana flowers. Test accept, **Not right now**, completion, and **End dance**.
 6. Send multiline chat messages both ways and verify unread/read state and history after refresh.
 7. Join voice from both browsers; test mute, leave, refresh, and denied microphone permission.
 8. Switch between normal home, cozy evening, and date-night lighting and audio.
 9. As Aldane, prepare the date, sit at the table, ask aloud, and select **Ask her now**.
 10. As Santana, test **I want to talk to you first** and then the accepted response.
 11. Refresh and confirm the accepted moment remains in memories.
-12. Test iPad portrait and landscape, including the joystick, camera drag, settings, drawers, and safe areas.
+12. Confirm Wren roams between the living and play areas, then settles near the children during couple moments and the date.
+13. Test iPad portrait and landscape, including the joystick, camera drag, settings, drawers, and safe areas.
 
 ## External Names
 

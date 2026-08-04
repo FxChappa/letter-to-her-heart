@@ -3,7 +3,7 @@ import type { RealtimeChannel } from '@supabase/supabase-js';
 import type { Profile } from '../../lib/supabase/database.types';
 import { authorizeRealtime, getSupabaseClient } from '../../lib/supabase/client';
 import { loadProfilesByRole } from '../../lib/supabase/profile';
-import { activeFromState, applyCoupleStateEvent, initialCoupleState, type CoupleInteractionKind, type CoupleInteractionState, type CoupleRequest } from './coupleState';
+import { activeFromState, applyCoupleStateEvent, canInitiateCoupleInteraction, initialCoupleState, type CoupleInteractionKind, type CoupleInteractionState, type CoupleRequest } from './coupleState';
 import type { PlayerPose, PresencePlayer } from './worldTypes';
 
 type CoupleWireEvent =
@@ -57,6 +57,7 @@ export function useCoupleInteraction(profile: Profile, localPose: PlayerPose, pl
         if (!otherProfile) return;
         if (event.type === 'request') {
           if (event.request.fromId !== otherProfile.id || event.request.toId !== profile.id) return;
+          if (!canInitiateCoupleInteraction(otherProfile.role, event.request.kind)) return;
           setState(current => applyCoupleStateEvent(current, { type: 'request-received', request: event.request }));
         } else if (event.fromId === otherProfile.id) {
           setState(current => applyCoupleStateEvent(current, event.type === 'response'
@@ -90,12 +91,12 @@ export function useCoupleInteraction(profile: Profile, localPose: PlayerPose, pl
       const requestId = state.request.requestId;
       setState(current => applyCoupleStateEvent(current, { type: 'ended' }));
       void send({ type: 'end', requestId, fromId: profile.id });
-    }, state.request.kind === 'kiss' ? 4200 : 16000);
+    }, state.request.kind === 'kiss' ? 4200 : state.request.kind === 'flowers' ? 7200 : 16000);
     return () => window.clearTimeout(timeout);
   }, [profile.id, send, state]);
 
   const request = useCallback(async (kind: CoupleInteractionKind) => {
-    if (!other || !canInvite) return;
+    if (!other || !canInvite || !canInitiateCoupleInteraction(profile.role, kind)) return;
     const nextRequest = makeRequest(profile, localPose, other, kind);
     setState(current => applyCoupleStateEvent(current, { type: 'request-sent', request: nextRequest }));
     if (!demoMode) await send({ type: 'request', request: nextRequest });
@@ -133,9 +134,10 @@ export function useCoupleInteraction(profile: Profile, localPose: PlayerPose, pl
     error,
     other,
     canInvite,
+    canGiveFlowers: canInvite && profile.role === 'aldane',
     request,
     respond,
     end,
     simulateIncoming,
-  }), [canInvite, end, error, other, request, respond, simulateIncoming, state]);
+  }), [canInvite, end, error, other, profile.role, request, respond, simulateIncoming, state]);
 }

@@ -163,7 +163,7 @@ export function SharedHome({
           <kbd>E</kbd>
         </button>
       )}
-      <CoupleInteractionControls interaction={coupleInteraction} demoMode={demoMode} />
+      <CoupleInteractionControls interaction={coupleInteraction} demoMode={demoMode} profileRole={profile.role} />
     </section>
   );
 }
