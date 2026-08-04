@@ -43,7 +43,7 @@ export function NewChapterOverlay({ preview = false, onComplete, onClose }: {
         {error && <p className="form-error" role="alert">{error}</p>}
         <button className="new-chapter-overlay__enter" type="button" onClick={() => void finish()} disabled={saving}>
           <DoorOpen size={18} />
-          {preview ? 'Return to our home' : saving ? 'Opening our home...' : 'Enter our home'}
+          {preview ? 'Return to our home' : saving ? 'Opening our home...' : 'Come meet me'}
         </button>
       </article>
     </section>
