@@ -9,7 +9,7 @@ import { AvatarBody, RemoteAvatar } from './Avatar';
 import { dampAngle, getNearbyInteraction, getSeatById, resolveMovement, toCameraRelativeMovement, type WorldInteraction } from './movement';
 import { useKeyboardMovement } from './useKeyboardMovement';
 import type { MovementInput, PlayerPose, PresencePlayer, RoomMood } from './worldTypes';
-import type { ActiveCoupleInteraction } from './coupleState';
+import { getCouplePlacement, type ActiveCoupleInteraction } from './coupleState';
 
 function Box({
   position,
@@ -544,17 +544,11 @@ function LocalPlayer({
 
     const seat = getSeatById(seatId);
     if (coupleInteraction) {
-      const directionX = Math.sin(coupleInteraction.facing);
-      const directionZ = Math.cos(coupleInteraction.facing);
-      const roleOffset = avatarKey === 'aldane' ? -0.31 : 0.31;
+      const placement = getCouplePlacement(coupleInteraction, avatarKey);
       poseRef.current = {
         ...poseRef.current,
-        position: [
-          coupleInteraction.anchor[0] + directionX * roleOffset,
-          0,
-          coupleInteraction.anchor[2] + directionZ * roleOffset,
-        ],
-        rotation: avatarKey === 'aldane' ? coupleInteraction.facing : coupleInteraction.facing + Math.PI,
+        position: placement.position,
+        rotation: placement.rotation,
         moving: false,
         activity: coupleInteraction.kind,
         seatId: null,
@@ -662,9 +656,22 @@ export function HomeScene({
         coupleInteraction={coupleInteraction}
         onFootstep={onFootstep}
       />
-      {remotePlayers.map(player => (
-        <RemoteAvatar key={player.id} config={avatarConfigs[player.role]} pose={player.pose} />
-      ))}
+      {remotePlayers.map(player => {
+        if (!coupleInteraction) {
+          return <RemoteAvatar key={player.id} config={avatarConfigs[player.role]} pose={player.pose} />;
+        }
+        const placement = getCouplePlacement(coupleInteraction, player.role);
+        const pose: PlayerPose = {
+          ...player.pose,
+          position: placement.position,
+          rotation: placement.rotation,
+          moving: false,
+          activity: coupleInteraction.kind,
+          seatId: null,
+        };
+
+        return <RemoteAvatar key={player.id} config={avatarConfigs[player.role]} pose={pose} />;
+      })}
     </>
   );
 }

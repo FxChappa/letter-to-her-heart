@@ -1,4 +1,5 @@
 import type { VectorTuple } from './worldTypes';
+import type { ProfileRole } from '../../lib/supabase/database.types';
 
 export type CoupleInteractionKind = 'kiss' | 'dance';
 
@@ -10,9 +11,10 @@ export type CoupleRequest = {
   toId: string;
   anchor: VectorTuple;
   facing: number;
+  startedAt: number;
 };
 
-export type ActiveCoupleInteraction = Pick<CoupleRequest, 'requestId' | 'kind' | 'anchor' | 'facing'>;
+export type ActiveCoupleInteraction = Pick<CoupleRequest, 'requestId' | 'kind' | 'anchor' | 'facing' | 'startedAt'>;
 
 export type CoupleInteractionState =
   | { phase: 'idle' }
@@ -39,3 +41,27 @@ export const applyCoupleStateEvent = (state: CoupleInteractionState, event: Coup
 
 export const activeFromState = (state: CoupleInteractionState): ActiveCoupleInteraction | null =>
   state.phase === 'active' ? state.request : null;
+
+export const getCouplePlacement = (
+  interaction: ActiveCoupleInteraction,
+  role: ProfileRole,
+  now = Date.now(),
+): { position: VectorTuple; rotation: number } => {
+  const startedAt = Number.isFinite(interaction.startedAt) ? interaction.startedAt : now;
+  const interactionSeconds = Math.max(0, (now - startedAt) / 1000);
+  const danceTurn = interaction.kind === 'dance' ? Math.sin(interactionSeconds * 0.55) * 0.13 : 0;
+  const interactionFacing = interaction.facing + danceTurn;
+  const directionX = Math.sin(interactionFacing);
+  const directionZ = Math.cos(interactionFacing);
+  const distanceFromCenter = interaction.kind === 'kiss' ? 0.27 : 0.44;
+  const roleOffset = role === 'aldane' ? -distanceFromCenter : distanceFromCenter;
+
+  return {
+    position: [
+      interaction.anchor[0] + directionX * roleOffset,
+      0,
+      interaction.anchor[2] + directionZ * roleOffset,
+    ],
+    rotation: role === 'aldane' ? interactionFacing : interactionFacing + Math.PI,
+  };
+};

@@ -175,11 +175,12 @@ export function AvatarBody({
     motionRef.current = MathUtils.lerp(motionRef.current, moving ? 1 : 0, 1 - Math.exp(-9 * Math.min(delta, 0.05)));
     const stride = Math.sin(clock.elapsedTime * 8.4) * 0.58 * motionRef.current;
     const idle = Math.sin(clock.elapsedTime * 1.7) * 0.025;
+    const danceStep = Math.sin(clock.elapsedTime * 1.55) * 0.1;
     if (bodyRef.current) {
-      const interactionLift = kissing ? (config.key === 'aldane' ? -0.045 : 0.075) : dancing ? Math.abs(Math.sin(clock.elapsedTime * 2.1)) * 0.018 : 0;
+      const interactionLift = kissing ? (config.key === 'aldane' ? -0.06 : 0.13) : dancing ? Math.abs(Math.sin(clock.elapsedTime * 1.55)) * 0.012 : 0;
       bodyRef.current.position.y = (seated ? 0.13 : 0) + interactionLift + Math.abs(Math.sin(clock.elapsedTime * 8.4)) * 0.018 * motionRef.current + idle * 0.2;
-      bodyRef.current.rotation.x = MathUtils.lerp(bodyRef.current.rotation.x, kissing ? -0.11 : 0, 1 - Math.exp(-7 * delta));
-      bodyRef.current.rotation.z = dancing ? Math.sin(clock.elapsedTime * 1.55) * 0.035 : 0;
+      bodyRef.current.rotation.x = MathUtils.lerp(bodyRef.current.rotation.x, kissing ? 0.03 : 0, 1 - Math.exp(-7 * delta));
+      bodyRef.current.rotation.z = dancing ? Math.sin(clock.elapsedTime * 1.55) * 0.055 : 0;
     }
     if (leftArmRef.current) {
       leftArmRef.current.rotation.x = seated ? -0.25 : dancing ? -1.02 + Math.sin(clock.elapsedTime * 1.55) * 0.08 : kissing ? -0.55 : stride + idle;
@@ -189,8 +190,8 @@ export function AvatarBody({
       rightArmRef.current.rotation.x = seated ? -0.25 : dancing ? -1.02 - Math.sin(clock.elapsedTime * 1.55) * 0.08 : kissing ? -0.55 : -stride - idle;
       rightArmRef.current.rotation.z = dancing ? 0.2 : 0;
     }
-    if (leftLegRef.current) leftLegRef.current.rotation.x = seated ? -Math.PI / 2 : -stride;
-    if (rightLegRef.current) rightLegRef.current.rotation.x = seated ? -Math.PI / 2 : stride;
+    if (leftLegRef.current) leftLegRef.current.rotation.x = seated ? -Math.PI / 2 : dancing ? danceStep : -stride;
+    if (rightLegRef.current) rightLegRef.current.rotation.x = seated ? -Math.PI / 2 : dancing ? -danceStep : stride;
   });
 
   const trousers = subtle ? '#3c2733' : config.outfit;

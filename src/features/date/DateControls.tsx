@@ -1,15 +1,23 @@
 import { Flame, Heart, Sparkles, X } from 'lucide-react';
 import type { Profile } from '../../lib/supabase/database.types';
+import { useAmbientAudio } from '../audio/AmbientAudioProvider';
 import { useDateSequence } from './useDateSequence';
 
 export type DateControlsState = ReturnType<typeof useDateSequence>;
 
 export function DateControls({ date, profile }: { date: DateControlsState; profile: Profile }) {
+  const audio = useAmbientAudio();
+
+  const prepareDate = async () => {
+    if (!audio.playing) await audio.start();
+    await date.prepareDate();
+  };
+
   return (
     <>
       <aside className="date-controls" aria-label="Date controls">
         {date.canPrepare && date.state.phase === 'normal' && (
-          <button type="button" onClick={() => void date.prepareDate()}>
+          <button type="button" onClick={() => void prepareDate()}>
             <Flame size={17} />
             Prepare our date
           </button>
@@ -51,6 +59,7 @@ export function DateControls({ date, profile }: { date: DateControlsState; profi
 
       {date.state.phase === 'accepted' && (
         <section className="accepted-moment" aria-label="Saved relationship moment">
+          <button type="button" onClick={() => void date.finishCelebration()} aria-label="Close celebration"><X size={16} /></button>
           <p>A new chapter begins.</p>
           <strong>Aldane and Santana</strong>
           <span>This moment can be revisited from memories later.</span>

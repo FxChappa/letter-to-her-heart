@@ -25,4 +25,9 @@ describe('date sequence state', () => {
     const accepted = applyDateEvent(question, { type: 'accepted', acceptedAt: '2026-08-03T17:00:00.000Z' });
     expect(accepted).toEqual({ phase: 'accepted', acceptedAt: '2026-08-03T17:00:00.000Z' });
   });
+
+  it('returns to a reusable date state after the celebration', () => {
+    const accepted = applyDateEvent(initialDateState, { type: 'accepted', acceptedAt: '2026-08-03T17:00:00.000Z' });
+    expect(applyDateEvent(accepted, { type: 'reset' })).toEqual(initialDateState);
+  });
 });

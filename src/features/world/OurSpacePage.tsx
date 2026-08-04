@@ -31,6 +31,7 @@ export function OurSpacePage() {
   const [memoriesOpen, setMemoriesOpen] = useState(false);
   const [introVisible, setIntroVisible] = useState(true);
   const [roomMood, setRoomMood] = useState<RoomMood>('home');
+  const activeRoomMood: RoomMood = date.state.phase !== 'normal' ? 'date' : roomMood;
 
   useEffect(() => {
     if (newChapterOpen || previewNewChapter) return;
@@ -39,8 +40,8 @@ export function OurSpacePage() {
   }, [newChapterOpen, previewNewChapter]);
 
   useEffect(() => {
-    audio.setMood(date.state.phase !== 'normal' ? 'date' : roomMood);
-  }, [audio, date.state.phase, roomMood]);
+    audio.setMood(activeRoomMood);
+  }, [activeRoomMood, audio]);
 
   const finishNewChapter = async () => {
     await auth.updateProfileProgress({ new_chapter_completed_at: new Date().toISOString() });
@@ -61,7 +62,7 @@ export function OurSpacePage() {
           </button>
           <SpaceSettings
             profile={profile}
-            roomMood={roomMood}
+            roomMood={activeRoomMood}
             onMoodChange={setRoomMood}
             onShowControls={() => setTutorialOpen(true)}
             onPreviewNewChapter={() => setPreviewNewChapter(true)}
@@ -87,7 +88,7 @@ export function OurSpacePage() {
         <SharedHome
           profile={profile}
           datePhase={date.state.phase}
-          roomMood={date.state.phase !== 'normal' ? 'date' : roomMood}
+          roomMood={activeRoomMood}
           demoMode={demoMode}
           onOpenMemories={() => setMemoriesOpen(true)}
         />

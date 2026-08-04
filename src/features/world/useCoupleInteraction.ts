@@ -28,6 +28,7 @@ const makeRequest = (profile: Profile, localPose: PlayerPose, other: PresencePla
       (localPose.position[2] + other.pose.position[2]) / 2,
     ],
     facing: Math.atan2(dx, dz),
+    startedAt: Date.now(),
   };
 };
 

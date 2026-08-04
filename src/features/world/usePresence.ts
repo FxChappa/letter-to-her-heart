@@ -10,12 +10,13 @@ type PoseBroadcast = Pick<PresencePlayer, 'id' | 'role' | 'displayName' | 'pose'
 
 const makeDemoRemote = (profile: Profile): PresencePlayer => {
   const otherRole = getOtherRole(profile.role);
+  const demoPosition: PlayerPose['position'] = profile.role === 'aldane' ? [-3.05, 0, -1.55] : [-4, 0, -2.35];
   return {
     id: `demo-${otherRole}`,
     role: otherRole,
     displayName: otherRole === 'aldane' ? 'Aldane' : 'Santana',
     pose: {
-      position: [profile.role === 'aldane' ? -1.5 : 1.8, 0, 0.6],
+      position: demoPosition,
       rotation: Math.PI,
       moving: false,
       activity: 'idle',
@@ -39,14 +40,15 @@ export function usePresence(profile: Profile | null, pose: PlayerPose, demoMode:
 
     if (!supabase || demoMode) {
       const interval = window.setInterval(() => {
+        const remote = makeDemoRemote(profile);
         setPlayers([{
-          ...makeDemoRemote(profile),
+          ...remote,
           pose: {
-            ...makeDemoRemote(profile).pose,
+            ...remote.pose,
             position: [
-              (profile.role === 'aldane' ? -1.5 : 1.8) + Math.sin(Date.now() / 1600) * 0.65,
+              remote.pose.position[0] + Math.sin(Date.now() / 1600) * 0.12,
               0,
-              0.6 + Math.cos(Date.now() / 1900) * 0.55,
+              remote.pose.position[2] + Math.cos(Date.now() / 1900) * 0.1,
             ],
             moving: true,
             activity: 'walking',

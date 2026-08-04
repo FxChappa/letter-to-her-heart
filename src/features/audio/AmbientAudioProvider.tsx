@@ -84,6 +84,25 @@ export function AmbientAudioProvider({ children }: { children: ReactNode }) {
     shimmer.connect(shimmerGain).connect(destination);
     shimmer.start(now + 1.5);
     shimmer.stop(now + 6);
+
+    if (dateMood) {
+      [chord[2] * 2, chord[3] * 2, chord[1] * 2, chord[2] * 2].forEach((frequency, melodyIndex) => {
+        const noteStart = now + 1.2 + melodyIndex * 1.75;
+        const note = context.createOscillator();
+        const noteGain = context.createGain();
+        const noteFilter = context.createBiquadFilter();
+        note.type = 'sine';
+        note.frequency.setValueAtTime(frequency, noteStart);
+        noteFilter.type = 'lowpass';
+        noteFilter.frequency.setValueAtTime(1180, noteStart);
+        noteGain.gain.setValueAtTime(0.0001, noteStart);
+        noteGain.gain.exponentialRampToValueAtTime(0.018, noteStart + 0.12);
+        noteGain.gain.exponentialRampToValueAtTime(0.0001, noteStart + 1.45);
+        note.connect(noteFilter).connect(noteGain).connect(destination);
+        note.start(noteStart);
+        note.stop(noteStart + 1.5);
+      });
+    }
   }, []);
 
   const stop = useCallback(() => {
@@ -178,11 +197,18 @@ export function AmbientAudioProvider({ children }: { children: ReactNode }) {
     moodRef.current = nextMood;
     setMoodState(nextMood);
     localStorage.setItem(moodStorageKey, nextMood);
-    if (playing) {
-      stop();
-      window.setTimeout(() => void start(), 820);
+    const context = contextRef.current;
+    const master = masterRef.current;
+    if (playing && context && master && context.state === 'running') {
+      if (schedulerRef.current !== null) window.clearInterval(schedulerRef.current);
+      scheduleChord(context, master, 0);
+      let chordIndex = 1;
+      schedulerRef.current = window.setInterval(
+        () => scheduleChord(context, master, chordIndex++),
+        getAmbientTrack(nextMood).intervalMs,
+      );
     }
-  }, [playing, start, stop]);
+  }, [playing, scheduleChord]);
 
   const playFootstep = useCallback(() => {
     const context = contextRef.current;

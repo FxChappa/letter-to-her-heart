@@ -18,26 +18,6 @@ export function useDateSequence(profile: Profile | null, demoMode: boolean) {
   useEffect(() => {
     if (!profile || !supabase || demoMode) return;
     let active = true;
-    void supabase
-      .from('relationship_moments')
-      .select('responded_at')
-      .eq('moment_type', 'girlfriend_question')
-      .eq('response', 'yes')
-      .order('responded_at', { ascending: false })
-      .limit(1)
-      .maybeSingle()
-      .then(({ data, error: loadError }) => {
-        if (!active || loadError || !data?.responded_at) return;
-        setState({ phase: 'accepted', acceptedAt: data.responded_at });
-      });
-    return () => {
-      active = false;
-    };
-  }, [demoMode, profile, supabase]);
-
-  useEffect(() => {
-    if (!profile || !supabase || demoMode) return;
-    let active = true;
     const nextChannel = supabase.channel('our-little-forever:date', {
       config: { private: true, broadcast: { self: false } },
     });
@@ -53,7 +33,7 @@ export function useDateSequence(profile: Profile | null, demoMode: boolean) {
         if (event.type === 'prepare' && profile.role === 'santana') {
           setNotification('Aldane has prepared something for you. Follow the warm light to the table.');
         }
-        if (event.type === 'accepted') setNotification('A new chapter begins.');
+        if (event.type === 'reset') setNotification(null);
       }).catch(() => setError('The date moment could not verify the other profile.'));
     });
 
@@ -94,6 +74,17 @@ export function useDateSequence(profile: Profile | null, demoMode: boolean) {
     setState(current => applyDateEvent(current, event));
     await broadcast(event);
   }, [broadcast]);
+
+  const finishCelebration = useCallback(async () => {
+    setNotification(null);
+    await applyLocal({ type: 'reset' });
+  }, [applyLocal]);
+
+  useEffect(() => {
+    if (state.phase !== 'accepted') return;
+    const timer = window.setTimeout(() => void finishCelebration(), 12000);
+    return () => window.clearTimeout(timer);
+  }, [finishCelebration, state.phase]);
 
   const prepareDate = useCallback(async () => {
     if (!canPrepareDate(profile?.role)) return;
@@ -141,7 +132,6 @@ export function useDateSequence(profile: Profile | null, demoMode: boolean) {
       }
     }
 
-    setNotification('A new chapter begins.');
     await applyLocal({ type: 'accepted', acceptedAt });
   }, [applyLocal, demoMode, profile, state.phase, supabase]);
 
@@ -156,6 +146,7 @@ export function useDateSequence(profile: Profile | null, demoMode: boolean) {
     askNow,
     respondYes,
     respondTalkFirst,
+    finishCelebration,
     clearNotification: () => setNotification(null),
   };
 }
